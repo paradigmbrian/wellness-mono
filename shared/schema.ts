@@ -12,6 +12,8 @@ export const sessions = pgTable(
   }
 );
 
+// Define the bloodworkMarkers table below after the labResults table to avoid circular references
+
 // Users table
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().notNull(),
@@ -39,6 +41,23 @@ export const labResults = pgTable("lab_results", {
   resultDate: date("result_date"),
   status: varchar("status").default("pending"), // pending, normal, review, abnormal
   data: jsonb("data"),
+  processed: boolean("processed").default(false), // Track if we've already processed this for markers
+});
+
+// Blood work markers table for tracking lab values over time
+export const bloodworkMarkers = pgTable("bloodwork_markers", {
+  id: serial("id").primaryKey(),
+  labResultId: integer("lab_result_id").notNull().references(() => labResults.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  name: varchar("name").notNull(), // e.g., "Cholesterol", "Glucose", "HDL"
+  value: numeric("value").notNull(), // The measured value
+  unit: varchar("unit").notNull(), // e.g., "mg/dL", "mmol/L"
+  minRange: numeric("min_range"), // Lower end of normal range
+  maxRange: numeric("max_range"), // Upper end of normal range
+  isAbnormal: boolean("is_abnormal").default(false),
+  category: varchar("category"), // e.g., "Lipids", "Metabolic", "Thyroid"
+  timestamp: timestamp("timestamp").defaultNow(),
+  resultDate: date("result_date").notNull(),
 });
 
 // Health metrics table
@@ -107,6 +126,12 @@ export const insertUserSchema = createInsertSchema(users).pick({
 
 export const insertLabResultSchema = createInsertSchema(labResults).omit({
   id: true,
+  processed: true,
+});
+
+export const insertBloodworkMarkerSchema = createInsertSchema(bloodworkMarkers).omit({
+  id: true,
+  timestamp: true,
 });
 
 export const insertHealthMetricSchema = createInsertSchema(healthMetrics).omit({
@@ -137,6 +162,9 @@ export type User = typeof users.$inferSelect;
 
 export type InsertLabResult = z.infer<typeof insertLabResultSchema>;
 export type LabResult = typeof labResults.$inferSelect;
+
+export type InsertBloodworkMarker = z.infer<typeof insertBloodworkMarkerSchema>;
+export type BloodworkMarker = typeof bloodworkMarkers.$inferSelect;
 
 export type InsertHealthMetric = z.infer<typeof insertHealthMetricSchema>;
 export type HealthMetric = typeof healthMetrics.$inferSelect;
