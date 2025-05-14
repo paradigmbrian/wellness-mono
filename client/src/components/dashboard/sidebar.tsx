@@ -22,9 +22,9 @@ interface SidebarLinkProps {
 function SidebarLink({ href, icon: Icon, children, isActive }: SidebarLinkProps) {
   return (
     <Link href={href}>
-      <a
+      <div
         className={cn(
-          "flex items-center space-x-3 px-3 py-2 rounded-md font-medium transition-colors",
+          "flex items-center space-x-3 px-3 py-2 rounded-md font-medium transition-colors cursor-pointer",
           isActive
             ? "bg-primary/10 text-primary"
             : "text-neutral-700 hover:bg-neutral-50"
@@ -32,7 +32,7 @@ function SidebarLink({ href, icon: Icon, children, isActive }: SidebarLinkProps)
       >
         <Icon className="h-5 w-5" />
         <span>{children}</span>
-      </a>
+      </div>
     </Link>
   );
 }
@@ -130,11 +130,12 @@ export function Sidebar() {
                 user?.subscriptionTier === "premium" ? "Premium Plan" : 
                   user?.subscriptionTier === "basic" ? "Basic Plan" : "Free Plan"}
             </span>
-            <a href="/api/logout">
-              <button className="text-neutral-500 hover:text-neutral-700">
-                <LogOut className="h-5 w-5" />
-              </button>
-            </a>
+            <button 
+              onClick={() => window.location.href = "/api/logout"} 
+              className="text-neutral-500 hover:text-neutral-700"
+            >
+              <LogOut className="h-5 w-5" />
+            </button>
           </div>
         </div>
       </div>
