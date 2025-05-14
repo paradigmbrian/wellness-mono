@@ -2,6 +2,7 @@ import { Switch, Route, Link } from "wouter";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Dashboard from "@/pages/dashboard";
 import LabResults from "@/pages/lab-results";
+import UploadLabResult from "@/pages/lab-results/upload";
 import Activity from "@/pages/activity";
 import Insights from "@/pages/insights";
 import Settings from "@/pages/settings";
@@ -70,6 +71,7 @@ function App() {
         <Route path="/" component={() => <ProtectedRoute component={Dashboard} />} />
         <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />
         <Route path="/lab-results" component={() => <ProtectedRoute component={LabResults} />} />
+        <Route path="/lab-results/upload" component={() => <ProtectedRoute component={UploadLabResult} />} />
         <Route path="/activity" component={() => <ProtectedRoute component={Activity} />} />
         <Route path="/insights" component={() => <ProtectedRoute component={Insights} />} />
         <Route path="/settings" component={() => <ProtectedRoute component={Settings} />} />
