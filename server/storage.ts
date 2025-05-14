@@ -3,6 +3,8 @@ import {
   type UpsertUser,
   type LabResult,
   type InsertLabResult,
+  type BloodworkMarker,
+  type InsertBloodworkMarker,
   type HealthMetric,
   type InsertHealthMetric,
   type AiInsight,
@@ -26,6 +28,14 @@ export interface IStorage {
   createLabResult(labResult: InsertLabResult): Promise<LabResult>;
   updateLabResult(id: number, labResult: Partial<InsertLabResult>): Promise<LabResult | undefined>;
   deleteLabResult(id: number): Promise<boolean>;
+  updateLabResultProcessed(id: number, processed: boolean): Promise<LabResult | undefined>;
+  
+  // Bloodwork markers operations
+  getBloodworkMarkers(userId: string, startDate?: Date, endDate?: Date): Promise<BloodworkMarker[]>;
+  getBloodworkMarkersByName(userId: string, name: string): Promise<BloodworkMarker[]>;
+  getBloodworkMarkersByLabResult(labResultId: number): Promise<BloodworkMarker[]>;
+  createBloodworkMarker(marker: InsertBloodworkMarker): Promise<BloodworkMarker>;
+  batchCreateBloodworkMarkers(markers: InsertBloodworkMarker[]): Promise<BloodworkMarker[]>;
   
   // Health metrics operations
   getHealthMetrics(userId: string, startDate?: Date, endDate?: Date): Promise<HealthMetric[]>;
@@ -54,12 +64,14 @@ export interface IStorage {
 export class MemStorage implements IStorage {
   private users: Map<string, User> = new Map();
   private labResults: Map<number, LabResult> = new Map();
+  private bloodworkMarkers: Map<number, BloodworkMarker> = new Map();
   private healthMetrics: Map<number, HealthMetric> = new Map();
   private aiInsights: Map<number, AiInsight> = new Map();
   private healthEvents: Map<number, HealthEvent> = new Map();
   private connectedServices: Map<string, ConnectedService> = new Map();
   
   private nextLabResultId = 1;
+  private nextBloodworkMarkerId = 1;
   private nextHealthMetricId = 1;
   private nextAiInsightId = 1;
   private nextHealthEventId = 1;
