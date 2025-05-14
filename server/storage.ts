@@ -200,25 +200,19 @@ export class MemStorage implements IStorage {
       const startTimestamp = startDate.getTime();
       const endTimestamp = endDate.getTime();
       return markers.filter(marker => {
-        const markerDate = marker.resultDate instanceof Date 
-          ? marker.resultDate.getTime() 
-          : new Date(marker.resultDate).getTime();
+        const markerDate = new Date(marker.resultDate).getTime();
         return markerDate >= startTimestamp && markerDate <= endTimestamp;
       });
     } else if (startDate) {
       const startTimestamp = startDate.getTime();
       return markers.filter(marker => {
-        const markerDate = marker.resultDate instanceof Date 
-          ? marker.resultDate.getTime() 
-          : new Date(marker.resultDate).getTime();
+        const markerDate = new Date(marker.resultDate).getTime();
         return markerDate >= startTimestamp;
       });
     } else if (endDate) {
       const endTimestamp = endDate.getTime();
       return markers.filter(marker => {
-        const markerDate = marker.resultDate instanceof Date 
-          ? marker.resultDate.getTime() 
-          : new Date(marker.resultDate).getTime();
+        const markerDate = new Date(marker.resultDate).getTime();
         return markerDate <= endTimestamp;
       });
     }
@@ -230,12 +224,8 @@ export class MemStorage implements IStorage {
     return Array.from(this.bloodworkMarkers.values())
       .filter(marker => marker.userId === userId && marker.name === name)
       .sort((a, b) => {
-        const dateA = a.resultDate instanceof Date 
-          ? a.resultDate.getTime() 
-          : new Date(a.resultDate).getTime();
-        const dateB = b.resultDate instanceof Date 
-          ? b.resultDate.getTime() 
-          : new Date(b.resultDate).getTime();
+        const dateA = new Date(a.resultDate).getTime();
+        const dateB = new Date(b.resultDate).getTime();
         return dateA - dateB; // Sort by date ascending
       });
   }
@@ -249,8 +239,17 @@ export class MemStorage implements IStorage {
     const id = this.nextBloodworkMarkerId++;
     
     const newMarker: BloodworkMarker = {
-      ...marker,
       id,
+      userId: marker.userId,
+      labResultId: marker.labResultId,
+      name: marker.name,
+      value: marker.value,
+      unit: marker.unit,
+      resultDate: marker.resultDate,
+      minRange: marker.minRange || null,
+      maxRange: marker.maxRange || null,
+      isAbnormal: marker.isAbnormal || false,
+      category: marker.category || null,
       timestamp: new Date()
     };
     

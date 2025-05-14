@@ -337,12 +337,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           console.log(`Processing lab result ${labResult.id} from ${labResult.fileUrl}`);
           
-          // Extract markers from the lab result file
+          // Skip if no file URL
+          if (!labResult.fileUrl) {
+            console.error(`Lab result ${labResult.id} has no file URL`);
+            await storage.updateLabResultProcessed(labResult.id, true);
+            return null;
+          }
+          
+          // Extract markers from the lab result file using a properly formatted date
+          const resultDate = labResult.resultDate || 
+                            new Date(labResult.uploadedAt).toISOString().split('T')[0];
+          
           const markers = await extractBloodworkMarkers(
             labResult.fileUrl, 
             labResult.userId,
             labResult.id,
-            labResult.resultDate ? new Date(labResult.resultDate) : new Date(labResult.uploadedAt)
+            resultDate
           );
           
           if (markers && markers.length > 0) {

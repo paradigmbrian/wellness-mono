@@ -50,14 +50,14 @@ export const bloodworkMarkers = pgTable("bloodwork_markers", {
   labResultId: integer("lab_result_id").notNull().references(() => labResults.id, { onDelete: 'cascade' }),
   userId: varchar("user_id").notNull().references(() => users.id),
   name: varchar("name").notNull(), // e.g., "Cholesterol", "Glucose", "HDL"
-  value: numeric("value").notNull(), // The measured value
+  value: varchar("value").notNull(), // The measured value as string to handle diverse formats
   unit: varchar("unit").notNull(), // e.g., "mg/dL", "mmol/L"
-  minRange: numeric("min_range"), // Lower end of normal range
-  maxRange: numeric("max_range"), // Upper end of normal range
+  minRange: varchar("min_range"), // Lower end of normal range
+  maxRange: varchar("max_range"), // Upper end of normal range
   isAbnormal: boolean("is_abnormal").default(false),
   category: varchar("category"), // e.g., "Lipids", "Metabolic", "Thyroid"
   timestamp: timestamp("timestamp").defaultNow(),
-  resultDate: date("result_date").notNull(),
+  resultDate: varchar("result_date").notNull(), // String date format for flexibility
 });
 
 // Health metrics table

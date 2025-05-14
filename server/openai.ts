@@ -175,10 +175,10 @@ async function downloadFileFromS3(fileUrl: string): Promise<Buffer> {
  * Extract bloodwork markers from a lab result file
  */
 export async function extractBloodworkMarkers(
-  labResultId: number,
-  userId: string, 
   fileUrl: string,
-  resultDate: Date
+  userId: string,
+  labResultId: number,
+  resultDate: string
 ): Promise<InsertBloodworkMarker[]> {
   try {
     // Download the file from S3
@@ -213,13 +213,13 @@ export async function extractBloodworkMarkers(
       labResultId,
       userId,
       name: marker.name,
-      value: marker.value,
+      value: String(marker.value), // Ensure value is a string
       unit: marker.unit,
-      minRange: marker.minRange || null,
-      maxRange: marker.maxRange || null,
+      minRange: marker.minRange !== undefined ? String(marker.minRange) : null,
+      maxRange: marker.maxRange !== undefined ? String(marker.maxRange) : null,
       isAbnormal: marker.isAbnormal || false,
       category: marker.category || "Uncategorized",
-      resultDate
+      resultDate: String(resultDate)
     }));
     
     return markers;
