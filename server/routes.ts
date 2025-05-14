@@ -174,11 +174,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No file uploaded" });
       }
       
-      // Upload the file to S3
+      // Upload the file to S3 with user ID in the path
       const s3FileUrl = await uploadFileToS3(
         req.file.path,
         req.file.mimetype,
-        req.file.originalname
+        req.file.originalname,
+        userId
       );
       
       console.log(`File uploaded to S3: ${s3FileUrl}`);
