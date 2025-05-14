@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { generateHealthInsights, analyzeLabResults, generateHealthPlan } from "./openai";
+import { generateHealthInsights, analyzeLabResults, generateHealthPlan, extractBloodworkMarkers } from "./openai";
 import { 
   createCustomer,
   createSubscription,
@@ -190,7 +190,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description,
         fileUrl: s3FileUrl,
         resultDate: resultDate ? new Date(resultDate) : undefined,
-        status: 'pending'
+        status: 'pending',
+        processed: false
       });
       
       // If there's JSON data, try to analyze it
@@ -268,6 +269,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error deleting lab result:", error);
       res.status(500).json({ message: `Failed to delete lab result: ${error.message}` });
+    }
+  });
+
+  // Bloodwork markers routes
+  app.get('/api/bloodwork-markers', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { startDate, endDate, name } = req.query;
+      
+      let markers;
+      if (name) {
+        markers = await storage.getBloodworkMarkersByName(userId, name as string);
+      } else {
+        markers = await storage.getBloodworkMarkers(
+          userId,
+          startDate ? new Date(startDate as string) : undefined,
+          endDate ? new Date(endDate as string) : undefined
+        );
+      }
+      
+      res.json(markers);
+    } catch (error: any) {
+      console.error("Error fetching bloodwork markers:", error);
+      res.status(500).json({ message: `Failed to fetch bloodwork markers: ${error.message}` });
+    }
+  });
+  
+  app.get('/api/lab-results/:id/bloodwork-markers', isAuthenticated, async (req: any, res) => {
+    try {
+      const labResultId = Number(req.params.id);
+      const labResult = await storage.getLabResult(labResultId);
+      
+      if (!labResult) {
+        return res.status(404).json({ message: "Lab result not found" });
+      }
+      
+      if (labResult.userId !== req.user.claims.sub) {
+        return res.status(403).json({ message: "Unauthorized access to lab result data" });
+      }
+      
+      const markers = await storage.getBloodworkMarkersByLabResult(labResultId);
+      res.json(markers);
+    } catch (error: any) {
+      console.error("Error fetching bloodwork markers for lab result:", error);
+      res.status(500).json({ message: `Failed to fetch bloodwork markers: ${error.message}` });
+    }
+  });
+  
+  // Background task to process lab results and extract bloodwork markers
+  app.post('/api/lab-results/process', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Find unprocessed lab results for this user
+      const labResults = await storage.getLabResults(userId);
+      const unprocessedResults = labResults.filter(result => 
+        !result.processed && result.fileUrl && result.fileUrl.length > 0
+      );
+      
+      if (unprocessedResults.length === 0) {
+        return res.json({ message: "No unprocessed lab results found", count: 0 });
+      }
+      
+      // Process each unprocessed result
+      const processPromises = unprocessedResults.map(async (labResult) => {
+        try {
+          console.log(`Processing lab result ${labResult.id} from ${labResult.fileUrl}`);
+          
+          // Extract markers from the lab result file
+          const markers = await extractBloodworkMarkers(
+            labResult.fileUrl, 
+            labResult.userId,
+            labResult.id,
+            labResult.resultDate ? new Date(labResult.resultDate) : new Date(labResult.uploadedAt)
+          );
+          
+          if (markers && markers.length > 0) {
+            // Store the extracted markers
+            const storedMarkers = await storage.batchCreateBloodworkMarkers(markers);
+            console.log(`Created ${storedMarkers.length} bloodwork markers for lab result ${labResult.id}`);
+            
+            // Create an insight if any abnormal values were found
+            const abnormalMarkers = storedMarkers.filter(marker => marker.isAbnormal);
+            if (abnormalMarkers.length > 0) {
+              const markerNames = abnormalMarkers.map(m => m.name).join(', ');
+              await storage.createAiInsight({
+                userId,
+                content: `Found ${abnormalMarkers.length} abnormal values in your lab result "${labResult.title}": ${markerNames}`,
+                category: 'lab_results',
+                severity: 'warning'
+              });
+            }
+            
+            // Mark the lab result as processed
+            await storage.updateLabResultProcessed(labResult.id, true);
+            return { labResultId: labResult.id, processed: true, markerCount: storedMarkers.length };
+          } else {
+            // No markers were found, but still mark as processed to avoid repeated attempts
+            await storage.updateLabResultProcessed(labResult.id, true);
+            return { labResultId: labResult.id, processed: true, markerCount: 0 };
+          }
+        } catch (error) {
+          console.error(`Error processing lab result ${labResult.id}:`, error);
+          return { labResultId: labResult.id, processed: false, error: error.message };
+        }
+      });
+      
+      const results = await Promise.all(processPromises);
+      res.json({ 
+        message: "Processed lab results", 
+        count: results.length,
+        results
+      });
+    } catch (error: any) {
+      console.error("Error processing lab results:", error);
+      res.status(500).json({ message: `Failed to process lab results: ${error.message}` });
     }
   });
 

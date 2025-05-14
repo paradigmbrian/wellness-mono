@@ -175,6 +175,92 @@ export class MemStorage implements IStorage {
   async deleteLabResult(id: number): Promise<boolean> {
     return this.labResults.delete(id);
   }
+  
+  async updateLabResultProcessed(id: number, processed: boolean): Promise<LabResult | undefined> {
+    const existingResult = this.labResults.get(id);
+    if (!existingResult) {
+      return undefined;
+    }
+    
+    const updatedResult: LabResult = {
+      ...existingResult,
+      processed
+    };
+    
+    this.labResults.set(id, updatedResult);
+    return updatedResult;
+  }
+  
+  // Bloodwork markers operations
+  async getBloodworkMarkers(userId: string, startDate?: Date, endDate?: Date): Promise<BloodworkMarker[]> {
+    const markers = Array.from(this.bloodworkMarkers.values())
+      .filter(marker => marker.userId === userId);
+    
+    if (startDate && endDate) {
+      const startTimestamp = startDate.getTime();
+      const endTimestamp = endDate.getTime();
+      return markers.filter(marker => {
+        const markerDate = marker.resultDate instanceof Date 
+          ? marker.resultDate.getTime() 
+          : new Date(marker.resultDate).getTime();
+        return markerDate >= startTimestamp && markerDate <= endTimestamp;
+      });
+    } else if (startDate) {
+      const startTimestamp = startDate.getTime();
+      return markers.filter(marker => {
+        const markerDate = marker.resultDate instanceof Date 
+          ? marker.resultDate.getTime() 
+          : new Date(marker.resultDate).getTime();
+        return markerDate >= startTimestamp;
+      });
+    } else if (endDate) {
+      const endTimestamp = endDate.getTime();
+      return markers.filter(marker => {
+        const markerDate = marker.resultDate instanceof Date 
+          ? marker.resultDate.getTime() 
+          : new Date(marker.resultDate).getTime();
+        return markerDate <= endTimestamp;
+      });
+    }
+    
+    return markers;
+  }
+  
+  async getBloodworkMarkersByName(userId: string, name: string): Promise<BloodworkMarker[]> {
+    return Array.from(this.bloodworkMarkers.values())
+      .filter(marker => marker.userId === userId && marker.name === name)
+      .sort((a, b) => {
+        const dateA = a.resultDate instanceof Date 
+          ? a.resultDate.getTime() 
+          : new Date(a.resultDate).getTime();
+        const dateB = b.resultDate instanceof Date 
+          ? b.resultDate.getTime() 
+          : new Date(b.resultDate).getTime();
+        return dateA - dateB; // Sort by date ascending
+      });
+  }
+  
+  async getBloodworkMarkersByLabResult(labResultId: number): Promise<BloodworkMarker[]> {
+    return Array.from(this.bloodworkMarkers.values())
+      .filter(marker => marker.labResultId === labResultId);
+  }
+  
+  async createBloodworkMarker(marker: InsertBloodworkMarker): Promise<BloodworkMarker> {
+    const id = this.nextBloodworkMarkerId++;
+    
+    const newMarker: BloodworkMarker = {
+      ...marker,
+      id,
+      timestamp: new Date()
+    };
+    
+    this.bloodworkMarkers.set(id, newMarker);
+    return newMarker;
+  }
+  
+  async batchCreateBloodworkMarkers(markers: InsertBloodworkMarker[]): Promise<BloodworkMarker[]> {
+    return Promise.all(markers.map(marker => this.createBloodworkMarker(marker)));
+  }
 
   // Health metrics operations
   async getHealthMetrics(userId: string, startDate?: Date, endDate?: Date): Promise<HealthMetric[]> {
