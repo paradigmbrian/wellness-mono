@@ -11,6 +11,7 @@ import {
   cancelSubscription,
   SUBSCRIPTION_PRICES
 } from "./stripe";
+import { uploadFileToS3, deleteFileFromS3 } from "./aws-s3";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -173,14 +174,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No file uploaded" });
       }
       
-      const fileUrl = `/uploads/${req.file.filename}`;
+      // Upload the file to S3
+      const s3FileUrl = await uploadFileToS3(
+        req.file.path,
+        req.file.mimetype,
+        req.file.originalname
+      );
       
-      // Create the lab result entry
+      console.log(`File uploaded to S3: ${s3FileUrl}`);
+      
+      // Create the lab result entry with S3 URL
       const labResult = await storage.createLabResult({
         userId,
         title,
         description,
-        fileUrl,
+        fileUrl: s3FileUrl,
         resultDate: resultDate ? new Date(resultDate) : undefined,
         status: 'pending'
       });
@@ -215,6 +223,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(labResult);
     } catch (error: any) {
       console.error("Error uploading lab result:", error);
+      
+      // Clean up temporary file if it exists
+      if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      
       res.status(500).json({ message: `Failed to upload lab result: ${error.message}` });
     }
   });
@@ -231,8 +245,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Unauthorized access to lab result" });
       }
       
-      // Delete the file if it exists
-      if (labResult.fileUrl) {
+      // Delete the file from S3 if it exists
+      if (labResult.fileUrl && labResult.fileUrl.includes('s3.amazonaws.com')) {
+        try {
+          await deleteFileFromS3(labResult.fileUrl);
+          console.log(`File deleted from S3: ${labResult.fileUrl}`);
+        } catch (s3Error) {
+          console.error("Error deleting file from S3:", s3Error);
+          // Continue with deletion even if S3 deletion fails
+        }
+      } 
+      // Fallback for local files (transitional period)
+      else if (labResult.fileUrl && labResult.fileUrl.startsWith('/uploads/')) {
         const filePath = path.join(process.cwd(), labResult.fileUrl);
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath);
