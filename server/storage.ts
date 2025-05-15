@@ -56,6 +56,7 @@ export interface IStorage {
   
   // Connected services operations
   getConnectedServices(userId: string): Promise<ConnectedService[]>;
+  getAllConnectedServices(): Promise<ConnectedService[]>;
   getConnectedService(userId: string, serviceName: string): Promise<ConnectedService | undefined>;
   upsertConnectedService(connectedService: InsertConnectedService): Promise<ConnectedService>;
   disconnectService(userId: string, serviceName: string): Promise<boolean>;
@@ -407,6 +408,10 @@ export class MemStorage implements IStorage {
   async getConnectedServices(userId: string): Promise<ConnectedService[]> {
     return Array.from(this.connectedServices.values())
       .filter(service => service.userId === userId);
+  }
+
+  async getAllConnectedServices(): Promise<ConnectedService[]> {
+    return Array.from(this.connectedServices.values());
   }
 
   async getConnectedService(userId: string, serviceName: string): Promise<ConnectedService | undefined> {

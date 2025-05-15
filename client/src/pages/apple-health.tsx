@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,7 +10,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { FileUp, Activity, Heart, AlertCircle, Calendar } from "lucide-react";
+import { FileUp, Activity, Heart, AlertCircle, Calendar, Settings, RefreshCw } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 
 export default function AppleHealth() {
   const { user } = useAuth();
@@ -20,11 +23,37 @@ export default function AppleHealth() {
   
   const [selectedTab, setSelectedTab] = useState("connect");
   const [isUploading, setIsUploading] = useState(false);
+  const [autoSync, setAutoSync] = useState(false);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [uploadResult, setUploadResult] = useState<{
     metricsAdded: number;
     daysProcessed: number;
     summary: string;
   } | null>(null);
+  
+  // Fetch connected service status
+  const { data: connectedServices } = useQuery({
+    queryKey: ["/api/connected-services"],
+  });
+  
+  // Check if Apple Health is connected and get autoSync setting
+  useEffect(() => {
+    if (connectedServices) {
+      const appleHealthService = connectedServices.find(
+        (service: any) => service.serviceName === 'apple_health'
+      );
+      
+      if (appleHealthService?.authData && typeof appleHealthService.authData === 'object') {
+        // Set auto-sync state from saved preferences
+        setAutoSync(appleHealthService.authData.autoSync === true);
+        
+        // If connected, switch to the upload tab by default
+        if (appleHealthService.isConnected && selectedTab === "connect") {
+          setSelectedTab("upload");
+        }
+      }
+    }
+  }, [connectedServices, selectedTab]);
   
   // Handle file upload
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -108,14 +137,67 @@ export default function AppleHealth() {
     });
   };
   
-  // Connect Apple Health
-  const handleConnectAppleHealth = async () => {
+  // Handle auto-sync settings update
+  const handleAutoSyncChange = async (enabled: boolean) => {
+    setIsSavingSettings(true);
+    
     try {
-      // Simulate connection
+      // Get the existing service data first
+      const services = connectedServices || [];
+      const appleHealthService = services.find(
+        (service: any) => service.serviceName === 'apple_health'
+      );
+      
+      // Prepare the auth data, preserving any existing data
+      const authData = {
+        ...(appleHealthService?.authData || {}),
+        autoSync: enabled,
+      };
+      
+      // Update the service settings
       const response = await apiRequest(
         "POST", 
         "/api/connected-services/apple_health/connect", 
-        { authData: { connected: true } }
+        { authData }
+      );
+      
+      if (!response.ok) {
+        throw new Error("Failed to update sync settings");
+      }
+      
+      // Update local state
+      setAutoSync(enabled);
+      
+      // Invalidate connected services query
+      queryClient.invalidateQueries({ queryKey: ["/api/connected-services"] });
+      
+      toast({
+        title: enabled ? "Auto-sync enabled" : "Auto-sync disabled",
+        description: enabled 
+          ? "Your Apple Health data will be automatically synced daily." 
+          : "Auto-sync has been turned off.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Settings update failed",
+        description: error.message || "Failed to update sync settings",
+        variant: "destructive",
+      });
+      // Revert UI state on error
+      setAutoSync(!enabled);
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
+  // Connect Apple Health
+  const handleConnectAppleHealth = async () => {
+    try {
+      // Connect with initial settings
+      const response = await apiRequest(
+        "POST", 
+        "/api/connected-services/apple_health/connect", 
+        { authData: { connected: true, autoSync: false } }
       );
       
       if (!response.ok) {
