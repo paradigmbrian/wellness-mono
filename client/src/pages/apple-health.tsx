@@ -234,10 +234,11 @@ export default function AppleHealth() {
         </div>
         
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-          <TabsList className="grid grid-cols-3 mb-6">
+          <TabsList className="grid grid-cols-4 mb-6">
             <TabsTrigger value="connect">1. Connect</TabsTrigger>
             <TabsTrigger value="upload">2. Upload Data</TabsTrigger>
-            <TabsTrigger value="results">3. Results</TabsTrigger>
+            <TabsTrigger value="settings">3. Settings</TabsTrigger>
+            <TabsTrigger value="results">4. Results</TabsTrigger>
           </TabsList>
           
           <TabsContent value="connect">
@@ -328,6 +329,71 @@ export default function AppleHealth() {
                   <AlertDescription>
                     Your health data is private and will only be used to provide insights
                     within your account. We never share your health data with third parties.
+                  </AlertDescription>
+                </Alert>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="settings">
+            <Card>
+              <CardHeader>
+                <CardTitle>Sync Settings</CardTitle>
+                <CardDescription>
+                  Configure how your Apple Health data is synced
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between space-x-2">
+                    <div className="flex flex-col space-y-1">
+                      <Label htmlFor="auto-sync" className="font-medium">
+                        Automatic Daily Sync
+                      </Label>
+                      <p className="text-sm text-neutral-500">
+                        Automatically sync your Apple Health data once per day
+                      </p>
+                    </div>
+                    <Switch
+                      id="auto-sync"
+                      checked={autoSync}
+                      onCheckedChange={handleAutoSyncChange}
+                      disabled={isSavingSettings}
+                    />
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div className="rounded-lg border border-neutral-100 p-4">
+                    <div className="flex items-center space-x-2">
+                      <RefreshCw className="h-5 w-5 text-blue-500" />
+                      <h3 className="text-lg font-medium">Sync Schedule</h3>
+                    </div>
+                    <p className="mt-2 text-sm text-neutral-600">
+                      {autoSync 
+                        ? "Your data will be synced automatically once per day. The sync happens in the background and includes any new data that has been added since the last sync."
+                        : "Automatic sync is currently disabled. Your data will only be updated when you manually upload new Apple Health files."}
+                    </p>
+                    
+                    {!autoSync && (
+                      <Button 
+                        variant="outline" 
+                        className="mt-4"
+                        onClick={() => handleAutoSyncChange(true)}
+                        disabled={isSavingSettings}
+                      >
+                        Enable Auto-Sync
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Important</AlertTitle>
+                  <AlertDescription>
+                    Automatic sync requires that you've already uploaded Apple Health data at least once.
+                    This data serves as the baseline for future syncs.
                   </AlertDescription>
                 </Alert>
               </CardContent>
