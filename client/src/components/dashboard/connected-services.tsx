@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
-import { Calendar, Database, PlugZap } from "lucide-react";
+import { Calendar, Database, PlugZap, ExternalLink } from "lucide-react";
 
 interface ServiceIconProps {
   serviceName: string;
@@ -45,6 +46,7 @@ function ServiceIcon({ serviceName }: ServiceIconProps) {
 export function ConnectedServices() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const queryClient = useQueryClient();
 
   const { data: connectedServices, isLoading } = useQuery({
@@ -164,21 +166,25 @@ export function ConnectedServices() {
                       <div className="flex justify-between items-center">
                         <p className="text-sm font-medium text-neutral-800">{service.displayName}</p>
                         {isConnected ? (
-                          <Badge variant="success" className="font-normal">
+                          <Badge variant="outline" className="font-normal text-green-600 bg-green-50 border-green-200">
                             Connected
                           </Badge>
+                        ) : service.name === "apple_health" ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => navigate("/apple-health")}
+                          >
+                            <ExternalLink className="h-3 w-3 mr-1" />
+                            Configure
+                          </Button>
                         ) : (
                           <Button
                             variant="outline"
                             size="sm"
                             className="h-7 text-xs"
-                            onClick={() => {
-                              if (service.name === "apple_health") {
-                                handleConnectAppleHealth();
-                              } else {
-                                connectService.mutate({ serviceName: service.name });
-                              }
-                            }}
+                            onClick={() => connectService.mutate({ serviceName: service.name })}
                             disabled={connectService.isPending}
                           >
                             Connect

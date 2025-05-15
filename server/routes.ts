@@ -609,14 +609,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post('/api/connected-services/apple_health/connect', isAuthenticated, async (req: any, res) => {
+  app.post('/api/connected-services/:serviceName/connect', isAuthenticated, async (req: any, res) => {
+    const { serviceName } = req.params;
     try {
       const userId = req.user.claims.sub;
       const { authData } = req.body;
       
       const service = await storage.upsertConnectedService({
         userId,
-        serviceName: 'apple_health',
+        serviceName,
         isConnected: true,
         lastSynced: new Date(),
         authData
@@ -624,8 +625,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(service);
     } catch (error: any) {
-      console.error("Error connecting Apple Health:", error);
-      res.status(500).json({ message: `Failed to connect Apple Health: ${error.message}` });
+      console.error(`Error connecting ${serviceName}:`, error);
+      res.status(500).json({ message: `Failed to connect ${serviceName}: ${error.message}` });
     }
   });
   
