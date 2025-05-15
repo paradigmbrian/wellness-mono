@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "wouter";
+import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -15,7 +15,7 @@ import { FileUp, Activity, Heart, AlertCircle, Calendar } from "lucide-react";
 export default function AppleHealth() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   
   const [selectedTab, setSelectedTab] = useState("connect");
@@ -142,7 +142,7 @@ export default function AppleHealth() {
   };
   
   return (
-    <DashboardLayout>
+    <DashboardLayout title="Apple Health Integration">
       <div className="flex flex-col max-w-5xl mx-auto p-4 md:p-8 space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Apple Health Integration</h1>

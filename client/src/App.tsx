@@ -7,6 +7,7 @@ import Activity from "@/pages/activity";
 import Insights from "@/pages/insights";
 import Settings from "@/pages/settings";
 import Subscription from "@/pages/subscription";
+import AppleHealth from "@/pages/apple-health";
 import NotFound from "@/pages/not-found";
 import { useAuth } from "./hooks/useAuth";
 import { Loader2 } from "lucide-react";
@@ -76,6 +77,7 @@ function App() {
         <Route path="/insights" component={() => <ProtectedRoute component={Insights} />} />
         <Route path="/settings" component={() => <ProtectedRoute component={Settings} />} />
         <Route path="/subscription" component={() => <ProtectedRoute component={Subscription} />} />
+        <Route path="/apple-health" component={() => <ProtectedRoute component={AppleHealth} />} />
         <Route component={NotFound} />
       </Switch>
     </TooltipProvider>
