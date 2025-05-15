@@ -609,7 +609,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post('/api/connected-services/apple-health/connect', isAuthenticated, async (req: any, res) => {
+  app.post('/api/connected-services/apple_health/connect', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const { authData } = req.body;
@@ -626,6 +626,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error connecting Apple Health:", error);
       res.status(500).json({ message: `Failed to connect Apple Health: ${error.message}` });
+    }
+  });
+  
+  // Apple Health data sync endpoint
+  app.post('/api/connected-services/apple_health/sync', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { data } = req.body;
+      
+      if (!data) {
+        return res.status(400).json({ message: "No Apple Health data provided" });
+      }
+      
+      // Import the necessary functions from the apple-health module
+      const { validateAppleHealthData, processAppleHealthData } = await import('./apple-health');
+      
+      // Validate the incoming data
+      const validatedData = validateAppleHealthData(data);
+      
+      // Process the Apple Health data
+      const result = await processAppleHealthData(userId, validatedData);
+      
+      // Update the connected service record
+      await storage.upsertConnectedService({
+        userId,
+        serviceName: 'apple_health',
+        isConnected: true,
+        lastSynced: new Date()
+      });
+      
+      res.json(result);
+    } catch (error: any) {
+      console.error("Error syncing Apple Health data:", error);
+      res.status(500).json({ message: `Failed to sync Apple Health data: ${error.message}` });
     }
   });
   
