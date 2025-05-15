@@ -65,10 +65,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/subscription/create', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { tier } = req.body;
+      const { tier, billingPeriod } = req.body;
       
-      if (!Object.keys(SUBSCRIPTION_PRICES).includes(tier)) {
-        return res.status(400).json({ message: "Invalid subscription tier" });
+      // Construct the full price key based on tier and billing period
+      const priceKey = `${tier}_${billingPeriod || 'monthly'}`;
+      
+      if (!Object.keys(SUBSCRIPTION_PRICES).includes(priceKey)) {
+        return res.status(400).json({ message: "Invalid subscription tier or billing period" });
       }
       
       const user = await storage.getUser(userId);
@@ -86,7 +89,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Create subscription
-      const subscription = await createSubscription(stripeCustomerId, SUBSCRIPTION_PRICES[tier]);
+      // Ensure the price key exists in SUBSCRIPTION_PRICES
+      if (!SUBSCRIPTION_PRICES[priceKey as keyof typeof SUBSCRIPTION_PRICES]) {
+        return res.status(400).json({ message: `Invalid price key: ${priceKey}` });
+      }
+      
+      const subscription = await createSubscription(
+        stripeCustomerId, 
+        SUBSCRIPTION_PRICES[priceKey as keyof typeof SUBSCRIPTION_PRICES]
+      );
+      
+      // Extract the base tier name without the billing period suffix
+      const baseTier = tier;
       
       // Update user with subscription info
       await storage.updateUserSubscription(
@@ -94,7 +108,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         stripeCustomerId,
         subscription.id,
         subscription.status,
-        tier
+        baseTier
       );
       
       res.json({

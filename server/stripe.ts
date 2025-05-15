@@ -10,9 +10,15 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 
 // Price IDs for different subscription tiers
 export const SUBSCRIPTION_PRICES = {
-  basic: process.env.STRIPE_BASIC_PRICE_ID || "price_basic",
-  pro: process.env.STRIPE_PRO_PRICE_ID || "price_pro",
-  premium: process.env.STRIPE_PREMIUM_PRICE_ID || "price_premium"
+  // Monthly prices
+  basic_monthly: process.env.STRIPE_BASIC_MONTHLY_PRICE_ID || "price_basic_monthly",
+  pro_monthly: process.env.STRIPE_PRO_MONTHLY_PRICE_ID || "price_pro_monthly",
+  premium_monthly: process.env.STRIPE_PREMIUM_MONTHLY_PRICE_ID || "price_premium_monthly",
+  
+  // Yearly prices (with discount)
+  basic_yearly: process.env.STRIPE_BASIC_YEARLY_PRICE_ID || "price_basic_yearly",
+  pro_yearly: process.env.STRIPE_PRO_YEARLY_PRICE_ID || "price_pro_yearly",
+  premium_yearly: process.env.STRIPE_PREMIUM_YEARLY_PRICE_ID || "price_premium_yearly"
 };
 
 /**

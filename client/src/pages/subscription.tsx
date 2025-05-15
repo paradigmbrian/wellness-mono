@@ -179,8 +179,8 @@ export default function Subscription() {
   const isSubscriptionActive = user?.subscriptionStatus === "active";
 
   const createSubscription = useMutation({
-    mutationFn: async ({ tier }: { tier: string }) => {
-      const response = await apiRequest("POST", "/api/subscription/create", { tier });
+    mutationFn: async ({ tier, billingPeriod }: { tier: string, billingPeriod: string }) => {
+      const response = await apiRequest("POST", "/api/subscription/create", { tier, billingPeriod });
       return response.json();
     },
     onSuccess: (data) => {
@@ -220,7 +220,10 @@ export default function Subscription() {
   };
 
   const handleSubscribe = () => {
-    createSubscription.mutate({ tier: selectedPlan });
+    createSubscription.mutate({ 
+      tier: selectedPlan,
+      billingPeriod: billingPeriod
+    });
   };
 
   const handleCancelSubscription = () => {
