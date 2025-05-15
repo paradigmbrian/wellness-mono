@@ -83,15 +83,15 @@ export default function Settings() {
       title="Settings"
       description="Manage your account and preferences"
     >
-      <div className="flex flex-col md:flex-row gap-6">
-        <div className="md:w-64 space-y-4">
-          <div className="sticky top-6">
-            <Tabs
-              orientation="vertical"
-              value={activeTab}
-              onValueChange={setActiveTab}
-              className="w-full"
-            >
+      <Tabs
+        orientation="vertical"
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="w-full"
+      >
+        <div className="flex flex-col md:flex-row gap-6">
+          <div className="md:w-64 space-y-4">
+            <div className="sticky top-6">
               <TabsList className="flex flex-col h-auto w-full bg-white border rounded-md p-1 shadow-sm">
                 <TabsTrigger value="profile" className="justify-start text-left px-3 py-2 mb-1">
                   <User className="h-4 w-4 mr-2" />
@@ -114,21 +114,20 @@ export default function Settings() {
                   Subscription
                 </TabsTrigger>
               </TabsList>
-            </Tabs>
-            
-            <div className="mt-6">
-              <a href="/api/logout">
-                <Button variant="outline" className="w-full justify-start">
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Log Out
-                </Button>
-              </a>
+              
+              <div className="mt-6">
+                <a href="/api/logout">
+                  <Button variant="outline" className="w-full justify-start">
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Log Out
+                  </Button>
+                </a>
+              </div>
             </div>
           </div>
-        </div>
-        
-        <div className="flex-1 space-y-6">
-          <TabsContent value="profile" className="mt-0">
+          
+          <div className="flex-1 space-y-6">
+            <TabsContent value="profile" className="mt-0">
             <Card>
               <CardHeader>
                 <CardTitle>Profile Information</CardTitle>
@@ -598,6 +597,7 @@ export default function Settings() {
           </TabsContent>
         </div>
       </div>
+      </Tabs>
     </DashboardLayout>
   );
 }
