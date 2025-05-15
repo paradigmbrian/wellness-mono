@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
-import { User, Shield, Bell, Globe, Key, CreditCard, LogOut, CheckCircle } from "lucide-react";
+import { User, Shield, Bell, Globe, Key, CreditCard, LogOut, CheckCircle, Calendar } from "lucide-react";
 
 export default function Settings() {
   const { user } = useAuth();
@@ -128,23 +128,14 @@ export default function Settings() {
           
           <div className="flex-1 space-y-6">
             <TabsContent value="profile" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>Profile Information</CardTitle>
-                <CardDescription>Update your personal information</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {isLoading ? (
-                  <>
-                    <div className="space-y-2">
-                      <Skeleton className="h-4 w-20" />
-                      <Skeleton className="h-10 w-full" />
-                    </div>
-                    <div className="space-y-2">
-                      <Skeleton className="h-4 w-20" />
-                      <Skeleton className="h-10 w-full" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Profile Information</CardTitle>
+                  <CardDescription>Update your personal information</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {isLoading ? (
+                    <>
                       <div className="space-y-2">
                         <Skeleton className="h-4 w-20" />
                         <Skeleton className="h-10 w-full" />
@@ -153,450 +144,453 @@ export default function Settings() {
                         <Skeleton className="h-4 w-20" />
                         <Skeleton className="h-10 w-full" />
                       </div>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input 
-                        id="email" 
-                        value={user?.email || ''} 
-                        disabled
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="firstName">First Name</Label>
-                        <Input 
-                          id="firstName" 
-                          defaultValue={user?.firstName || ''} 
-                          placeholder="Your first name"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="lastName">Last Name</Label>
-                        <Input 
-                          id="lastName" 
-                          defaultValue={user?.lastName || ''} 
-                          placeholder="Your last name"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="profileImage">Profile Image</Label>
-                      <div className="flex items-center gap-4">
-                        <div className="h-16 w-16 rounded-full overflow-hidden bg-neutral-200">
-                          {user?.profileImageUrl ? (
-                            <img
-                              src={user.profileImageUrl}
-                              alt="Profile"
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <div className="h-full w-full flex items-center justify-center bg-primary/10 text-primary text-xl font-semibold">
-                              {user?.firstName?.charAt(0) || user?.email?.charAt(0) || "U"}
-                            </div>
-                          )}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-20" />
+                          <Skeleton className="h-10 w-full" />
                         </div>
-                        <Button variant="outline">Change Image</Button>
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-20" />
+                          <Skeleton className="h-10 w-full" />
+                        </div>
                       </div>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-              <CardFooter className="flex justify-end gap-2">
-                <Button variant="outline">Cancel</Button>
-                <Button disabled={isSaving} onClick={saveSettings}>
-                  {isSaving ? "Saving..." : "Save Changes"}
-                </Button>
-              </CardFooter>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="account" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>Account Security</CardTitle>
-                <CardDescription>Manage your account security settings</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
-                  <h3 className="text-base font-medium mb-2">Change Password</h3>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="currentPassword">Current Password</Label>
-                      <Input id="currentPassword" type="password" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="newPassword">New Password</Label>
-                      <Input id="newPassword" type="password" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                      <Input id="confirmPassword" type="password" />
-                    </div>
-                  </div>
-                  <Button className="mt-4">Update Password</Button>
-                </div>
-                
-                <Separator />
-                
-                <div>
-                  <h3 className="text-base font-medium mb-2">Data & Privacy</h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">Export Your Data</p>
-                        <p className="text-sm text-neutral-500">Download all your health data</p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email</Label>
+                        <Input 
+                          id="email" 
+                          value={user?.email || ''} 
+                          disabled
+                        />
                       </div>
-                      <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
-                        <DialogTrigger asChild>
-                          <Button variant="outline">Export Data</Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Export Health Data</DialogTitle>
-                            <DialogDescription>
-                              Your data will be exported and sent to your email address. This process may take a few minutes.
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="py-4">
-                            <div className="flex items-center gap-2 mb-2">
-                              <CheckCircle className="h-5 w-5 text-primary" />
-                              <span>Health metrics and activity data</span>
-                            </div>
-                            <div className="flex items-center gap-2 mb-2">
-                              <CheckCircle className="h-5 w-5 text-primary" />
-                              <span>Lab results and medical records</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <CheckCircle className="h-5 w-5 text-primary" />
-                              <span>AI-generated insights and recommendations</span>
-                            </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="firstName">First Name</Label>
+                          <Input 
+                            id="firstName" 
+                            defaultValue={user?.firstName || ''} 
+                            placeholder="Your first name"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="lastName">Last Name</Label>
+                          <Input 
+                            id="lastName" 
+                            defaultValue={user?.lastName || ''} 
+                            placeholder="Your last name"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="profileImage">Profile Image</Label>
+                        <div className="flex items-center gap-4">
+                          <div className="h-16 w-16 rounded-full overflow-hidden bg-neutral-200">
+                            {user?.profileImageUrl ? (
+                              <img
+                                src={user.profileImageUrl}
+                                alt="Profile"
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="h-full w-full flex items-center justify-center bg-primary/10 text-primary text-xl font-semibold">
+                                {user?.firstName?.charAt(0) || user?.email?.charAt(0) || "U"}
+                              </div>
+                            )}
                           </div>
-                          <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsExportDialogOpen(false)}>Cancel</Button>
-                            <Button onClick={exportData}>Confirm Export</Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
+                          <Button variant="outline">
+                            Change Image
+                          </Button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+                <CardFooter className="flex justify-end gap-2">
+                  <Button variant="outline">Cancel</Button>
+                  <Button disabled={isSaving} onClick={saveSettings}>
+                    {isSaving ? "Saving..." : "Save Changes"}
+                  </Button>
+                </CardFooter>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="account" className="mt-0">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Account Security</CardTitle>
+                  <CardDescription>Manage your password and account security</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="current-password">Current Password</Label>
+                    <Input id="current-password" type="password" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="new-password">New Password</Label>
+                      <Input id="new-password" type="password" />
                     </div>
-                    
+                    <div className="space-y-2">
+                      <Label htmlFor="confirm-password">Confirm New Password</Label>
+                      <Input id="confirm-password" type="password" />
+                    </div>
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div className="space-y-4">
+                    <h3 className="text-base font-medium">Two-Factor Authentication</h3>
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium">Delete Account</p>
-                        <p className="text-sm text-neutral-500">Permanently delete your account and all data</p>
+                        <p className="font-medium">Two-factor authentication is disabled</p>
+                        <p className="text-sm text-neutral-500">Add an extra layer of security to your account</p>
                       </div>
-                      <Button variant="destructive">Delete Account</Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="notifications" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>Notification Preferences</CardTitle>
-                <CardDescription>Manage how you receive notifications</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Email Notifications</p>
-                      <p className="text-sm text-neutral-500">Receive notifications via email</p>
-                    </div>
-                    <Switch 
-                      checked={isEmailNotificationsEnabled} 
-                      onCheckedChange={setIsEmailNotificationsEnabled} 
-                    />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">App Notifications</p>
-                      <p className="text-sm text-neutral-500">Receive in-app notifications</p>
-                    </div>
-                    <Switch 
-                      checked={isAppNotificationsEnabled} 
-                      onCheckedChange={setIsAppNotificationsEnabled} 
-                    />
-                  </div>
-                </div>
-                
-                <Separator />
-                
-                <div className="space-y-4">
-                  <h3 className="text-base font-medium">Notification Types</h3>
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">AI Insights</p>
-                      <p className="text-sm text-neutral-500">Notify when new AI insights are available</p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Lab Results</p>
-                      <p className="text-sm text-neutral-500">Notify when lab results are processed</p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Health Alerts</p>
-                      <p className="text-sm text-neutral-500">Notify for important health metrics changes</p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Subscription Updates</p>
-                      <p className="text-sm text-neutral-500">Notify about subscription status changes</p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-end">
-                <Button onClick={saveSettings} disabled={isSaving}>
-                  {isSaving ? "Saving..." : "Save Preferences"}
-                </Button>
-              </CardFooter>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="connected" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>Connected Services</CardTitle>
-                <CardDescription>Manage your connected health services and devices</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div className="border border-neutral-100 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 flex-shrink-0 rounded-full bg-black flex items-center justify-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-white" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                        <div>
-                          <p className="font-medium">Apple Health</p>
-                          <p className="text-sm text-neutral-500">
-                            {appleHealthConnected 
-                              ? "Connected and syncing" 
-                              : "Connect to sync health data from your Apple devices"}
-                          </p>
-                        </div>
-                      </div>
-                      <Button variant={appleHealthConnected ? "outline" : "default"}>
-                        {appleHealthConnected ? "Disconnect" : "Connect"}
+                      <Button>
+                        <Shield className="h-4 w-4 mr-2" />
+                        Enable
                       </Button>
                     </div>
                   </div>
-                  
-                  <div className="border border-neutral-100 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 flex-shrink-0 rounded-full bg-blue-500 flex items-center justify-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-white" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M3 12v3c0 1.657 3.134 3 7 3s7-1.343 7-3v-3c0 1.657-3.134 3-7 3s-7-1.343-7-3z" />
-                            <path d="M3 7v3c0 1.657 3.134 3 7 3s7-1.343 7-3V7c0 1.657-3.134 3-7 3S3 8.657 3 7z" />
-                            <path d="M17 5c0 1.657-3.134 3-7 3S3 6.657 3 5s3.134-3 7-3 7 1.343 7 3z" />
-                          </svg>
-                        </div>
-                        <div>
-                          <p className="font-medium">My Health Records</p>
-                          <p className="text-sm text-neutral-500">Import your medical records</p>
-                        </div>
+                </CardContent>
+                <CardFooter className="flex justify-end gap-2">
+                  <Button variant="outline">Cancel</Button>
+                  <Button disabled={isSaving} onClick={saveSettings}>
+                    {isSaving ? "Saving..." : "Save Changes"}
+                  </Button>
+                </CardFooter>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="notifications" className="mt-0">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Notification Preferences</CardTitle>
+                  <CardDescription>Choose what notifications you receive</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between space-x-2">
+                      <div className="flex flex-col space-y-1">
+                        <Label htmlFor="email-notifications" className="font-medium">
+                          Email Notifications
+                        </Label>
+                        <p className="text-sm text-neutral-500">
+                          Receive email notifications about health alerts and updates
+                        </p>
                       </div>
-                      <Button>Connect</Button>
+                      <Switch
+                        id="email-notifications"
+                        checked={isEmailNotificationsEnabled}
+                        onCheckedChange={setIsEmailNotificationsEnabled}
+                      />
                     </div>
-                  </div>
-                  
-                  <div className="border border-neutral-100 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 flex-shrink-0 rounded-full bg-purple-500 flex items-center justify-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-white" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-14a3 3 0 00-3 3v2H7a1 1 0 000 2h1v1a1 1 0 01-1 1 1 1 0 100 2h6a1 1 0 100-2H9.83c.11-.313.17-.65.17-1v-1h1a1 1 0 100-2h-1V7a1 1 0 112 0 1 1 0 102 0 3 3 0 00-3-3z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                        <div>
-                          <p className="font-medium">Lab Partner</p>
-                          <p className="text-sm text-neutral-500">Auto-import lab results</p>
-                        </div>
+                    
+                    <Separator />
+                    
+                    <div className="flex items-center justify-between space-x-2">
+                      <div className="flex flex-col space-y-1">
+                        <Label htmlFor="app-notifications" className="font-medium">
+                          App Notifications
+                        </Label>
+                        <p className="text-sm text-neutral-500">
+                          Receive notifications within the app for important updates
+                        </p>
                       </div>
-                      <Button>Connect</Button>
+                      <Switch
+                        id="app-notifications"
+                        checked={isAppNotificationsEnabled}
+                        onCheckedChange={setIsAppNotificationsEnabled}
+                      />
                     </div>
                   </div>
-                </div>
-                
-                <Separator />
-                
-                <div>
-                  <h3 className="text-base font-medium mb-2">Data Permissions</h3>
-                  <p className="text-sm text-neutral-500 mb-4">
-                    Control what data is shared with connected services
-                  </p>
+                </CardContent>
+                <CardFooter className="flex justify-end gap-2">
+                  <Button variant="outline">Cancel</Button>
+                  <Button disabled={isSaving} onClick={saveSettings}>
+                    {isSaving ? "Saving..." : "Save Changes"}
+                  </Button>
+                </CardFooter>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="connected" className="mt-0">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Connected Services</CardTitle>
+                  <CardDescription>Manage your connected health services and devices</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg">
+                    <div className="flex items-center gap-4">
+                      <div className="h-10 w-10 rounded-full bg-black flex items-center justify-center">
+                        <Calendar className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium">Apple Health</h3>
+                        <p className="text-sm text-neutral-500">Connect to import your health data</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {appleHealthConnected ? (
+                        <>
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 flex items-center gap-1">
+                            <CheckCircle className="h-3.5 w-3.5" />
+                            Connected
+                          </Badge>
+                          <Link href="/apple-health">
+                            <Button variant="outline" size="sm">
+                              Manage
+                            </Button>
+                          </Link>
+                        </>
+                      ) : (
+                        <Link href="/apple-health">
+                          <Button variant="outline" size="sm">
+                            Connect
+                          </Button>
+                        </Link>
+                      )}
+                    </div>
+                  </div>
                   
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium">Health Metrics</p>
-                      <Switch defaultChecked />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium">Lab Results</p>
-                      <Switch defaultChecked />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium">Sleep Data</p>
-                      <Switch defaultChecked />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium">Nutrition Data</p>
-                      <Switch defaultChecked />
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="subscription" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>Subscription Management</CardTitle>
-                <CardDescription>Manage your subscription plan and billing</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="bg-neutral-50 rounded-lg p-4 border">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="text-lg font-semibold">
-                        {user?.subscriptionTier === "pro" ? "Pro Plan" : 
-                         user?.subscriptionTier === "premium" ? "Premium Plan" : 
-                         user?.subscriptionTier === "basic" ? "Basic Plan" : "Free Plan"}
-                      </h3>
-                      <p className="text-sm text-neutral-500 mt-1">
-                        {user?.subscriptionStatus === "active"
-                          ? "Your subscription is active"
-                          : "Your subscription is inactive"}
+                  <Separator />
+                  
+                  <div>
+                    <div className="mb-4">
+                      <h3 className="text-base font-medium">Data Export</h3>
+                      <p className="text-sm text-neutral-500">
+                        Export all your health data in a JSON format
                       </p>
                     </div>
-                    <Badge
-                      variant={user?.subscriptionStatus === "active" ? "default" : "outline"}
-                    >
-                      {user?.subscriptionStatus === "active" ? "Active" : "Inactive"}
-                    </Badge>
+                    
+                    <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline">
+                          Export Data
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Export Health Data</DialogTitle>
+                          <DialogDescription>
+                            This will export all your health data in JSON format. The export file will be emailed to you once ready.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4">
+                          <p className="text-sm">
+                            The export will include:
+                          </p>
+                          <ul className="list-disc list-inside space-y-1 mt-2 text-sm">
+                            <li>Health metrics</li>
+                            <li>Lab results</li>
+                            <li>Activity data</li>
+                            <li>Health events</li>
+                          </ul>
+                        </div>
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setIsExportDialogOpen(false)}>
+                            Cancel
+                          </Button>
+                          <Button onClick={exportData}>
+                            Export
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="subscription" className="mt-0">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Subscription Plan</CardTitle>
+                  <CardDescription>Manage your subscription and billing</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="bg-neutral-50 rounded-lg p-4">
+                    <h3 className="font-medium mb-2">Current Plan</h3>
+                    <div className="flex items-center gap-3">
+                      <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-white font-medium">
+                        {user?.subscriptionTier === "premium" ? "PRO+" : 
+                         user?.subscriptionTier === "pro" ? "PRO" : 
+                         "Free"}
+                      </div>
+                      <div>
+                        <h4 className="font-medium">{user?.subscriptionTier === "premium" ? "Premium Plan" : 
+                                                     user?.subscriptionTier === "pro" ? "Pro Plan" : 
+                                                     "Basic Plan"}</h4>
+                        <p className="text-sm text-neutral-500">
+                          {user?.subscriptionStatus === "active" ? (
+                            "Your subscription is active"
+                          ) : user?.subscriptionStatus === "trial" ? (
+                            "Your free trial is active"
+                          ) : user?.subscriptionStatus === "cancelled" ? (
+                            "Your subscription will end soon"
+                          ) : (
+                            "No active subscription"
+                          )}
+                        </p>
+                        {user?.subscriptionStatus === "active" && user?.subscriptionExpiresAt && (
+                          <p className="text-xs text-neutral-400 mt-1">
+                            Renews on {new Date(user.subscriptionExpiresAt).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </div>
                   
-                  {user?.subscriptionExpiresAt && (
-                    <p className="text-sm text-neutral-500 mt-2">
-                      Renews on {format(new Date(user.subscriptionExpiresAt), "MMMM d, yyyy")}
-                    </p>
-                  )}
-                </div>
-                
-                <div>
-                  <h3 className="text-base font-medium mb-2">Plan Features</h3>
-                  
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-5 w-5 text-primary" />
-                      <span className="text-sm">AI-powered health insights</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-5 w-5 text-primary" />
-                      <span className="text-sm">Unlimited lab result uploads</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-5 w-5 text-primary" />
-                      <span className="text-sm">Health metrics dashboard</span>
-                    </div>
-                    {(user?.subscriptionTier === "pro" || user?.subscriptionTier === "premium") && (
-                      <>
-                        <div className="flex items-center gap-2">
-                          <CheckCircle className="h-5 w-5 text-primary" />
-                          <span className="text-sm">Advanced health analytics</span>
+                  <div className="space-y-4">
+                    <h3 className="font-medium">Available Plans</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className={`border rounded-lg p-4 ${user?.subscriptionTier === "basic" ? "border-blue-200 bg-blue-50" : "border-neutral-200"}`}>
+                        <h4 className="font-medium">Basic</h4>
+                        <div className="my-2">
+                          <span className="text-2xl font-bold">Free</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <CheckCircle className="h-5 w-5 text-primary" />
-                          <span className="text-sm">Personalized recommendations</span>
-                        </div>
-                      </>
-                    )}
-                    {user?.subscriptionTier === "premium" && (
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="h-5 w-5 text-primary" />
-                        <span className="text-sm">Priority support</span>
+                        <ul className="text-sm space-y-2 mb-4">
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            <span>Track basic health metrics</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            <span>Upload lab results</span>
+                          </li>
+                        </ul>
+                        {user?.subscriptionTier === "basic" ? (
+                          <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">Current Plan</Badge>
+                        ) : (
+                          <Button variant="outline" size="sm" className="w-full">
+                            Downgrade
+                          </Button>
+                        )}
                       </div>
+                      
+                      <div className={`border rounded-lg p-4 ${user?.subscriptionTier === "pro" ? "border-blue-200 bg-blue-50" : "border-neutral-200"}`}>
+                        <h4 className="font-medium">Pro</h4>
+                        <div className="my-2">
+                          <span className="text-2xl font-bold">$9.99</span>
+                          <span className="text-sm text-neutral-500">/month</span>
+                        </div>
+                        <ul className="text-sm space-y-2 mb-4">
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            <span>Everything in Basic</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            <span>AI-powered health insights</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            <span>Apple Health integration</span>
+                          </li>
+                        </ul>
+                        {user?.subscriptionTier === "pro" ? (
+                          <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">Current Plan</Badge>
+                        ) : user?.subscriptionStatus === "active" ? (
+                          <Button variant="outline" size="sm" className="w-full">
+                            Change Plan
+                          </Button>
+                        ) : (
+                          <Button size="sm" className="w-full">
+                            Upgrade
+                          </Button>
+                        )}
+                      </div>
+                      
+                      <div className={`border rounded-lg p-4 ${user?.subscriptionTier === "premium" ? "border-blue-200 bg-blue-50" : "border-neutral-200"}`}>
+                        <h4 className="font-medium">Premium</h4>
+                        <div className="my-2">
+                          <span className="text-2xl font-bold">$19.99</span>
+                          <span className="text-sm text-neutral-500">/month</span>
+                        </div>
+                        <ul className="text-sm space-y-2 mb-4">
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            <span>Everything in Pro</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            <span>Personalized health plans</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            <span>Premium analytics</span>
+                          </li>
+                        </ul>
+                        {user?.subscriptionTier === "premium" ? (
+                          <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">Current Plan</Badge>
+                        ) : user?.subscriptionStatus === "active" ? (
+                          <Button variant="outline" size="sm" className="w-full">
+                            Change Plan
+                          </Button>
+                        ) : (
+                          <Button size="sm" className="w-full">
+                            Upgrade
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-4">
+                    <Link href="/subscription">
+                      <Button>
+                        {user?.subscriptionStatus === "active" ? "Manage Subscription" : "Upgrade Plan"}
+                      </Button>
+                    </Link>
+                    
+                    {user?.subscriptionStatus === "active" && (
+                      <Button variant="outline" className="w-full sm:w-auto">Cancel Subscription</Button>
                     )}
                   </div>
-                </div>
-                
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <Link href="/subscription">
-                    <Button className="w-full sm:w-auto">
-                      {user?.subscriptionStatus === "active" ? "Manage Subscription" : "Upgrade Plan"}
-                    </Button>
-                  </Link>
                   
-                  {user?.subscriptionStatus === "active" && (
-                    <Button variant="outline" className="w-full sm:w-auto">Cancel Subscription</Button>
-                  )}
-                </div>
-                
-                <Separator />
-                
-                <div>
-                  <h3 className="text-base font-medium mb-2">Billing History</h3>
+                  <Separator />
                   
-                  {user?.subscriptionStatus === "active" ? (
-                    <div className="border rounded-md divide-y">
-                      <div className="p-3 flex justify-between items-center">
-                        <div>
-                          <p className="font-medium text-sm">Pro Plan - Monthly</p>
-                          <p className="text-xs text-neutral-500">May 15, 2023</p>
+                  <div>
+                    <h3 className="text-base font-medium mb-2">Billing History</h3>
+                    
+                    {user?.subscriptionStatus === "active" ? (
+                      <div className="border rounded-md divide-y">
+                        <div className="p-3 flex justify-between items-center">
+                          <div>
+                            <p className="font-medium text-sm">Pro Plan - Monthly</p>
+                            <p className="text-xs text-neutral-500">May 15, 2023</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-medium text-sm">$19.99</p>
+                            <Button variant="ghost" size="sm" className="h-7 text-xs">
+                              Receipt
+                            </Button>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-medium text-sm">$19.99</p>
-                          <Button variant="ghost" size="sm" className="h-7 text-xs">
-                            Receipt
-                          </Button>
+                        <div className="p-3 flex justify-between items-center">
+                          <div>
+                            <p className="font-medium text-sm">Pro Plan - Monthly</p>
+                            <p className="text-xs text-neutral-500">April 15, 2023</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-medium text-sm">$19.99</p>
+                            <Button variant="ghost" size="sm" className="h-7 text-xs">
+                              Receipt
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                      <div className="p-3 flex justify-between items-center">
-                        <div>
-                          <p className="font-medium text-sm">Pro Plan - Monthly</p>
-                          <p className="text-xs text-neutral-500">April 15, 2023</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-medium text-sm">$19.99</p>
-                          <Button variant="ghost" size="sm" className="h-7 text-xs">
-                            Receipt
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-neutral-500">No billing history available</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                    ) : (
+                      <p className="text-sm text-neutral-500">No billing history available</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </div>
         </div>
-      </div>
       </Tabs>
     </DashboardLayout>
   );

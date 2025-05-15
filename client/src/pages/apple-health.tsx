@@ -192,19 +192,24 @@ export default function AppleHealth() {
 
   // Connect Apple Health
   const handleConnectAppleHealth = async () => {
+    console.log("Connecting to Apple Health...");
     try {
       // Connect with initial settings
+      console.log("Sending connection request...");
       const response = await apiRequest(
         "POST", 
         "/api/connected-services/apple_health/connect", 
         { authData: { connected: true, autoSync: false } }
       );
       
+      console.log("Response received:", response);
+      
       if (!response.ok) {
         throw new Error("Failed to connect to Apple Health");
       }
       
       // Invalidate connected services query
+      console.log("Connection successful, invalidating queries...");
       queryClient.invalidateQueries({ queryKey: ["/api/connected-services"] });
       
       toast({
@@ -215,6 +220,7 @@ export default function AppleHealth() {
       // Switch to the upload tab
       setSelectedTab("upload");
     } catch (error: any) {
+      console.error("Connection error:", error);
       toast({
         title: "Connection failed",
         description: error.message || "Failed to connect to Apple Health",
