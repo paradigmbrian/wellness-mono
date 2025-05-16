@@ -254,21 +254,11 @@ export default function Subscription() {
         "Advanced health analytics",
         "Personalized recommendations",
         "Priority email support",
-        "Health trends analysis"
+        "Health trends analysis",
+        "Premium AI insights",
+        "Advanced data visualization"
       ],
       isPopular: true
-    },
-    premium: {
-      name: "Premium Plan",
-      price: "$29.99",
-      features: [
-        "Everything in Pro",
-        "Premium AI insights",
-        "Family account (up to 4 members)",
-        "Health coach consultation",
-        "Priority support 24/7",
-        "Exclusive health webinars"
-      ],
     }
   };
 
@@ -334,7 +324,7 @@ export default function Subscription() {
             </Tabs>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-6 mb-6">
+          <div className="grid md:grid-cols-2 gap-6 mb-6 max-w-4xl mx-auto">
             <SubscriptionPlan 
               name={plans.basic.name} 
               price={billingPeriod === "monthly" ? plans.basic.price : "$7.99"} 
@@ -352,15 +342,6 @@ export default function Subscription() {
               isCurrentPlan={currentPlan === "pro" && isSubscriptionActive}
               onSelect={() => handleSelectPlan("pro")}
               isSelected={selectedPlan === "pro"}
-            />
-            
-            <SubscriptionPlan 
-              name={plans.premium.name} 
-              price={billingPeriod === "monthly" ? plans.premium.price : "$23.99"} 
-              features={plans.premium.features}
-              isCurrentPlan={currentPlan === "premium" && isSubscriptionActive}
-              onSelect={() => handleSelectPlan("premium")}
-              isSelected={selectedPlan === "premium"}
             />
           </div>
           

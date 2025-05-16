@@ -11,14 +11,12 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 // Price IDs for different subscription tiers
 export const SUBSCRIPTION_PRICES = {
   // Monthly prices
-  basic_monthly: process.env.STRIPE_BASIC_MONTHLY_PRICE_ID || "price_basic_monthly",
-  pro_monthly: process.env.STRIPE_PRO_MONTHLY_PRICE_ID || "price_pro_monthly",
-  premium_monthly: process.env.STRIPE_PREMIUM_MONTHLY_PRICE_ID || "price_premium_monthly",
+  basic_monthly: process.env.STRIPE_BASIC_MONTHLY_PRICE_ID || "price_1RPU7DQ9Txr92oVXGMhA7T6C",
+  pro_monthly: process.env.STRIPE_PRO_MONTHLY_PRICE_ID || "price_1RPU7bQ9Txr92oVXqWu3JY2s",
   
   // Yearly prices (with discount)
-  basic_yearly: process.env.STRIPE_BASIC_YEARLY_PRICE_ID || "price_basic_yearly",
-  pro_yearly: process.env.STRIPE_PRO_YEARLY_PRICE_ID || "price_pro_yearly",
-  premium_yearly: process.env.STRIPE_PREMIUM_YEARLY_PRICE_ID || "price_premium_yearly"
+  basic_yearly: process.env.STRIPE_BASIC_YEARLY_PRICE_ID || "price_1RPU7zQ9Txr92oVXF0e1JkIO",
+  pro_yearly: process.env.STRIPE_PRO_YEARLY_PRICE_ID || "price_1RPU8JQ9Txr92oVXIA5RfYPo"
 };
 
 /**
