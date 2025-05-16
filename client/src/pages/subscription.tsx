@@ -2,7 +2,14 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,10 +21,17 @@ import { CheckCircle, X, CreditCard, AlertTriangle } from "lucide-react";
 
 // Stripe Elements
 import { loadStripe } from "@stripe/stripe-js";
-import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import {
+  Elements,
+  PaymentElement,
+  useStripe,
+  useElements,
+} from "@stripe/react-stripe-js";
 
 // Make sure to call `loadStripe` outside of a component's render to avoid recreating the `Stripe` object on every render.
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || 'pk_test_placeholder');
+const stripePromise = loadStripe(
+  import.meta.env.VITE_STRIPE_PUBLIC_KEY || "pk_test_placeholder",
+);
 
 function CheckoutForm({ selectedPlan }: { selectedPlan: string }) {
   const stripe = useStripe();
@@ -82,20 +96,24 @@ function CheckoutForm({ selectedPlan }: { selectedPlan: string }) {
         <div className="flex justify-between items-center mb-2">
           <span className="font-medium">Total</span>
           <span className="font-bold">
-            {selectedPlan === "basic" ? "$9.99" : selectedPlan === "pro" ? "$19.99" : "$29.99"}
-            <span className="text-sm font-normal text-neutral-500"> /month</span>
+            {selectedPlan === "basic"
+              ? "$9.99"
+              : selectedPlan === "pro"
+                ? "$19.99"
+                : "$29.99"}
+            <span className="text-sm font-normal text-neutral-500">
+              {" "}
+              /month
+            </span>
           </span>
         </div>
         <p className="text-xs text-neutral-500">
-          By subscribing, you agree to our terms of service. You can cancel anytime.
+          By subscribing, you agree to our terms of service. You can cancel
+          anytime.
         </p>
       </div>
 
-      <Button 
-        type="submit" 
-        disabled={!stripe || isLoading} 
-        className="w-full"
-      >
+      <Button type="submit" disabled={!stripe || isLoading} className="w-full">
         {isLoading ? (
           <div className="flex items-center">
             <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full mr-2" />
@@ -112,31 +130,37 @@ function CheckoutForm({ selectedPlan }: { selectedPlan: string }) {
   );
 }
 
-function SubscriptionPlan({ 
-  name, 
-  price, 
-  features, 
-  isPopular = false, 
+function SubscriptionPlan({
+  paymentCycle,
+  name,
+  price,
+  features,
+  isPopular = false,
   isCurrentPlan = false,
   onSelect,
   isSelected,
-}: { 
-  name: string; 
-  price: string; 
-  features: string[]; 
+}: {
+  paymentCycle: string;
+  name: string;
+  price: string;
+  features: string[];
   isPopular?: boolean;
-  isCurrentPlan?: boolean; 
+  isCurrentPlan?: boolean;
   onSelect: () => void;
   isSelected: boolean;
 }) {
   return (
-    <Card className={`border ${isSelected ? "border-primary ring-2 ring-primary/10" : ""} ${isPopular ? "shadow-md" : ""}`}>
+    <Card
+      className={`border ${isSelected ? "border-primary ring-2 ring-primary/10" : ""} ${isPopular ? "shadow-md" : ""}`}
+    >
       <CardHeader className="pb-3">
         {isPopular && (
           <Badge className="w-fit mb-2 bg-primary">Most Popular</Badge>
         )}
         {isCurrentPlan && (
-          <Badge variant="outline" className="w-fit mb-2">Current Plan</Badge>
+          <Badge variant="outline" className="w-fit mb-2">
+            Current Plan
+          </Badge>
         )}
         <CardTitle className="text-xl">{name}</CardTitle>
         <div className="flex items-baseline">
@@ -155,13 +179,17 @@ function SubscriptionPlan({
         </ul>
       </CardContent>
       <CardFooter>
-        <Button 
-          variant={isSelected ? "default" : "outline"} 
+        <Button
+          variant={isSelected ? "default" : "outline"}
           className="w-full"
           onClick={onSelect}
           disabled={isCurrentPlan}
         >
-          {isCurrentPlan ? "Current Plan" : isSelected ? "Selected" : "Select Plan"}
+          {isCurrentPlan
+            ? "Current Plan"
+            : isSelected
+              ? "Selected"
+              : "Select Plan"}
         </Button>
       </CardFooter>
     </Card>
@@ -172,15 +200,26 @@ export default function Subscription() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [billingPeriod, setBillingPeriod] = useState("monthly");
-  const [selectedPlan, setSelectedPlan] = useState<string>(user?.subscriptionTier || "basic");
+  const [selectedPlan, setSelectedPlan] = useState<string>(
+    user?.subscriptionTier || "basic",
+  );
   const [clientSecret, setClientSecret] = useState<string | null>(null);
 
   const currentPlan = user?.subscriptionTier || "free";
   const isSubscriptionActive = user?.subscriptionStatus === "active";
 
   const createSubscription = useMutation({
-    mutationFn: async ({ tier, billingPeriod }: { tier: string, billingPeriod: string }) => {
-      const response = await apiRequest("POST", "/api/subscription/create", { tier, billingPeriod });
+    mutationFn: async ({
+      tier,
+      billingPeriod,
+    }: {
+      tier: string;
+      billingPeriod: string;
+    }) => {
+      const response = await apiRequest("POST", "/api/subscription/create", {
+        tier,
+        billingPeriod,
+      });
       return response.json();
     },
     onSuccess: (data) => {
@@ -220,14 +259,18 @@ export default function Subscription() {
   };
 
   const handleSubscribe = () => {
-    createSubscription.mutate({ 
+    createSubscription.mutate({
       tier: selectedPlan,
-      billingPeriod: billingPeriod
+      billingPeriod: billingPeriod,
     });
   };
 
   const handleCancelSubscription = () => {
-    if (window.confirm("Are you sure you want to cancel your subscription? You'll lose access to premium features.")) {
+    if (
+      window.confirm(
+        "Are you sure you want to cancel your subscription? You'll lose access to premium features.",
+      )
+    ) {
       cancelSubscription.mutate();
     }
   };
@@ -236,18 +279,18 @@ export default function Subscription() {
   const plans = {
     basic: {
       name: "Basic Plan",
-      price: "$9.99",
+      price: "$10",
       features: [
         "Health metrics dashboard",
         "Up to 10 lab result uploads/month",
         "Basic health analytics",
         "Access to AI insights",
-        "Email support"
+        "Email support",
       ],
     },
     pro: {
       name: "Pro Plan",
-      price: "$19.99",
+      price: "$20",
       features: [
         "Everything in Basic",
         "Unlimited lab result uploads",
@@ -256,10 +299,10 @@ export default function Subscription() {
         "Priority email support",
         "Health trends analysis",
         "Premium AI insights",
-        "Advanced data visualization"
+        "Advanced data visualization",
       ],
-      isPopular: true
-    }
+      isPopular: true,
+    },
   };
 
   return (
@@ -272,20 +315,27 @@ export default function Subscription() {
           <Card className="bg-gradient-to-r from-primary to-primary-dark rounded-xl overflow-hidden shadow-sm">
             <CardContent className="p-6">
               <div className="text-white">
-                <h2 className="text-xl font-semibold">Your Current Subscription</h2>
+                <h2 className="text-xl font-semibold">
+                  Your Current Subscription
+                </h2>
                 <p className="text-primary-light text-sm mt-1">
-                  You are subscribed to the {plans[currentPlan as keyof typeof plans]?.name}
+                  You are subscribed to the{" "}
+                  {plans[currentPlan as keyof typeof plans]?.name}
                 </p>
-                
+
                 {user?.subscriptionExpiresAt && (
                   <p className="text-sm mt-2 text-white/80">
-                    Renews on {format(new Date(user.subscriptionExpiresAt), "MMMM d, yyyy")}
+                    Renews on{" "}
+                    {format(
+                      new Date(user.subscriptionExpiresAt),
+                      "MMMM d, yyyy",
+                    )}
                   </p>
                 )}
-                
+
                 <div className="mt-4">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="bg-white/20 text-white border-white/40 hover:bg-white/30"
                     onClick={handleCancelSubscription}
                   >
@@ -298,13 +348,14 @@ export default function Subscription() {
           </Card>
         </div>
       )}
-      
+
       {clientSecret ? (
         <Card>
           <CardHeader>
             <CardTitle>Complete Your Subscription</CardTitle>
             <CardDescription>
-              Enter your payment details to subscribe to the {plans[selectedPlan as keyof typeof plans]?.name}
+              Enter your payment details to subscribe to the{" "}
+              {plans[selectedPlan as keyof typeof plans]?.name}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -319,24 +370,28 @@ export default function Subscription() {
             <Tabs value={billingPeriod} onValueChange={setBillingPeriod}>
               <TabsList>
                 <TabsTrigger value="monthly">Monthly Billing</TabsTrigger>
-                <TabsTrigger value="annual">Annual Billing (Save 20%)</TabsTrigger>
+                <TabsTrigger value="annual">
+                  Annual Billing (Save 20%)
+                </TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
-          
+
           <div className="grid md:grid-cols-2 gap-6 mb-6 max-w-4xl mx-auto">
-            <SubscriptionPlan 
-              name={plans.basic.name} 
-              price={billingPeriod === "monthly" ? plans.basic.price : "$7.99"} 
+            <SubscriptionPlan
+              paymentCycle={billingPeriod === "monthly" ? "monthly" : "yearly"}
+              name={plans.basic.name}
+              price={billingPeriod === "monthly" ? plans.basic.price : "$100"}
               features={plans.basic.features}
               isCurrentPlan={currentPlan === "basic" && isSubscriptionActive}
               onSelect={() => handleSelectPlan("basic")}
               isSelected={selectedPlan === "basic"}
             />
-            
-            <SubscriptionPlan 
-              name={plans.pro.name} 
-              price={billingPeriod === "monthly" ? plans.pro.price : "$15.99"} 
+
+            <SubscriptionPlan
+              paymentCycle={billingPeriod === "monthly" ? "monthly" : "yearly"}
+              name={plans.pro.name}
+              price={billingPeriod === "monthly" ? plans.pro.price : "$120"}
               features={plans.pro.features}
               isPopular={plans.pro.isPopular}
               isCurrentPlan={currentPlan === "pro" && isSubscriptionActive}
@@ -344,12 +399,15 @@ export default function Subscription() {
               isSelected={selectedPlan === "pro"}
             />
           </div>
-          
+
           <div className="flex justify-center">
-            <Button 
-              size="lg" 
-              onClick={handleSubscribe} 
-              disabled={createSubscription.isPending || (currentPlan === selectedPlan && isSubscriptionActive)}
+            <Button
+              size="lg"
+              onClick={handleSubscribe}
+              disabled={
+                createSubscription.isPending ||
+                (currentPlan === selectedPlan && isSubscriptionActive)
+              }
             >
               {createSubscription.isPending ? (
                 <div className="flex items-center">
@@ -357,49 +415,68 @@ export default function Subscription() {
                   Processing...
                 </div>
               ) : (
-                <>Subscribe to {plans[selectedPlan as keyof typeof plans]?.name}</>
+                <>
+                  Subscribe to {plans[selectedPlan as keyof typeof plans]?.name}
+                </>
               )}
             </Button>
           </div>
         </>
       )}
-      
+
       <div className="mt-12">
-        <h3 className="text-xl font-semibold mb-4 text-center">Frequently Asked Questions</h3>
+        <h3 className="text-xl font-semibold mb-4 text-center">
+          Frequently Asked Questions
+        </h3>
         <div className="max-w-3xl mx-auto space-y-4">
           <Card>
             <CardHeader className="py-3">
-              <CardTitle className="text-base">How does the subscription work?</CardTitle>
+              <CardTitle className="text-base">
+                How does the subscription work?
+              </CardTitle>
             </CardHeader>
             <CardContent className="py-0 text-sm text-neutral-600">
-              Our subscription plans are billed either monthly or annually. You can cancel anytime, and your subscription will remain active until the end of the current billing period.
+              Our subscription plans are billed either monthly or annually. You
+              can cancel anytime, and your subscription will remain active until
+              the end of the current billing period.
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="py-3">
-              <CardTitle className="text-base">Can I change plans later?</CardTitle>
+              <CardTitle className="text-base">
+                Can I change plans later?
+              </CardTitle>
             </CardHeader>
             <CardContent className="py-0 text-sm text-neutral-600">
-              Yes, you can upgrade or downgrade your plan at any time. When upgrading, you'll be charged the prorated difference for the remainder of your billing cycle.
+              Yes, you can upgrade or downgrade your plan at any time. When
+              upgrading, you'll be charged the prorated difference for the
+              remainder of your billing cycle.
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="py-3">
-              <CardTitle className="text-base">How do I cancel my subscription?</CardTitle>
+              <CardTitle className="text-base">
+                How do I cancel my subscription?
+              </CardTitle>
             </CardHeader>
             <CardContent className="py-0 text-sm text-neutral-600">
-              You can cancel your subscription at any time from your account settings. Your plan will remain active until the end of your current billing period.
+              You can cancel your subscription at any time from your account
+              settings. Your plan will remain active until the end of your
+              current billing period.
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="py-3">
-              <CardTitle className="text-base">Is there a free trial?</CardTitle>
+              <CardTitle className="text-base">
+                Is there a free trial?
+              </CardTitle>
             </CardHeader>
             <CardContent className="py-0 text-sm text-neutral-600">
-              We offer a 14-day free trial for new users to try our Pro plan. No credit card is required for the trial.
+              We offer a 14-day free trial for new users to try our Pro plan. No
+              credit card is required for the trial.
             </CardContent>
           </Card>
         </div>
