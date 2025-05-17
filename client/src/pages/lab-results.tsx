@@ -13,7 +13,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { getStatusVariant } from "@/lib/utils";
 import { format, parseISO, isAfter, isBefore, addMonths } from "date-fns";
-import { Download, FileText, MoreHorizontal, Plus, Trash2, TrendingUp, Calendar, Activity } from "lucide-react";
+import { Download, FileText, MoreHorizontal, Plus, Trash2, TrendingUp, Calendar, Activity, RefreshCw } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, AreaChart, Area } from "recharts";
 
 export default function LabResults() {
