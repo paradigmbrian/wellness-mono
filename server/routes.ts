@@ -373,43 +373,119 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return null;
           }
           
-          // Extract markers from the lab result file using a properly formatted date
+          // Get category from data if available
+          let category = 'bloodwork'; // Default category
+          try {
+            if (typeof labResult.data === 'string') {
+              const parsedData = JSON.parse(labResult.data);
+              category = parsedData.category || 'bloodwork';
+            } else if (labResult.data && typeof labResult.data === 'object') {
+              // @ts-ignore
+              category = labResult.data.category || 'bloodwork';
+            }
+          } catch (e) {
+            console.error('Error parsing lab result data:', e);
+          }
+          
+          console.log(`Processing lab result ${labResult.id} with category: ${category}`);
+          
+          // Extract date
           const resultDate = labResult.resultDate || 
-                            new Date(labResult.uploadedAt).toISOString().split('T')[0];
-          
-          const markers = await extractBloodworkMarkers(
-            labResult.fileUrl, 
-            labResult.userId,
-            labResult.id,
-            resultDate
-          );
-          
-          if (markers && markers.length > 0) {
-            // Store the extracted markers
-            const storedMarkers = await storage.batchCreateBloodworkMarkers(markers);
-            console.log(`Created ${storedMarkers.length} bloodwork markers for lab result ${labResult.id}`);
-            
-            // Create an insight if any abnormal values were found
-            const abnormalMarkers = storedMarkers.filter(marker => marker.isAbnormal);
-            if (abnormalMarkers.length > 0) {
-              const markerNames = abnormalMarkers.map(m => m.name).join(', ');
+                            new Date(labResult.uploadedAt || new Date()).toISOString().split('T')[0];
+                            
+          // Process based on category
+          if (category.toLowerCase() === 'dexa') {
+            try {
+              // Process DEXA scan
+              const dexaData = await processDexaScan(
+                labResult.fileUrl,
+                labResult.userId,
+                labResult.id,
+                resultDate
+              );
+              
+              // Update lab result with DEXA data
+              await storage.updateLabResult(labResult.id, {
+                status: 'completed',
+                data: {
+                  ...dexaData,
+                  category: 'dexa' // Ensure category is set
+                }
+              });
+              
+              // Mark as processed
+              await storage.updateLabResultProcessed(labResult.id, true);
+              
+              // Create insight for DEXA scan
               await storage.createAiInsight({
                 userId,
-                content: `Found ${abnormalMarkers.length} abnormal values in your lab result "${labResult.title}": ${markerNames}`,
+                content: `Your DEXA scan "${labResult.title}" has been processed. View your body composition metrics now.`,
                 category: 'lab_results',
-                severity: 'warning'
+                severity: 'info'
               });
+              
+              // Return success information
+              return {
+                labResultId: labResult.id,
+                processed: true,
+                type: 'dexa',
+                message: 'DEXA scan processed successfully'
+              };
+            } catch (error: any) {
+              console.error(`Error processing DEXA scan ${labResult.id}:`, error);
+              await storage.updateLabResult(labResult.id, {
+                status: 'error',
+                data: { error: error.message, category: 'dexa' }
+              });
+              return { labResultId: labResult.id, processed: false, error: error.message };
             }
-            
-            // Mark the lab result as processed
-            await storage.updateLabResultProcessed(labResult.id, true);
-            return { labResultId: labResult.id, processed: true, markerCount: storedMarkers.length };
           } else {
-            // No markers were found, but still mark as processed to avoid repeated attempts
-            await storage.updateLabResultProcessed(labResult.id, true);
-            return { labResultId: labResult.id, processed: true, markerCount: 0 };
+            // Process as standard bloodwork
+            try {
+              const markers = await extractBloodworkMarkers(
+                labResult.fileUrl, 
+                labResult.userId,
+                labResult.id,
+                resultDate
+              );
+              
+              let storedMarkers: any[] = [];
+              if (markers && markers.length > 0) {
+                // Store the extracted markers
+                storedMarkers = await storage.batchCreateBloodworkMarkers(markers);
+                console.log(`Created ${storedMarkers.length} bloodwork markers for lab result ${labResult.id}`);
+                
+                // Create an insight if any abnormal values were found
+                const abnormalMarkers = storedMarkers.filter(marker => marker.isAbnormal);
+                if (abnormalMarkers.length > 0) {
+                  const markerNames = abnormalMarkers.map(m => m.name).join(', ');
+                  await storage.createAiInsight({
+                    userId,
+                    content: `Found ${abnormalMarkers.length} abnormal values in your lab result "${labResult.title}": ${markerNames}`,
+                    category: 'lab_results',
+                    severity: 'warning'
+                  });
+                }
+              }
+            
+              // Mark the lab result as processed
+              await storage.updateLabResultProcessed(labResult.id, true);
+              return { 
+                labResultId: labResult.id, 
+                processed: true, 
+                markerCount: storedMarkers.length,
+                type: 'bloodwork' 
+              };
+            } catch (error: any) {
+              console.error(`Error processing bloodwork ${labResult.id}:`, error);
+              await storage.updateLabResult(labResult.id, {
+                status: 'error',
+                data: { error: error.message, category: 'bloodwork' }
+              });
+              return { labResultId: labResult.id, processed: false, error: error.message };
+            }
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error(`Error processing lab result ${labResult.id}:`, error);
           return { labResultId: labResult.id, processed: false, error: error.message };
         }

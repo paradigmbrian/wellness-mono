@@ -3,6 +3,18 @@ import { InsertBloodworkMarker } from "@shared/schema";
 import { S3Client } from "@aws-sdk/client-s3";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { Readable } from "stream";
+
+// Used for both DEXA scan processing and bloodwork
+export interface ProcessResult {
+  category: string;
+  processed: boolean;
+  interpretation?: string;
+  metrics?: any;
+  findings?: any[];
+  regionalAssessment?: any;
+  muscleBalance?: any;
+  status?: "normal" | "review" | "abnormal";
+}
 import { finished } from "stream/promises";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
