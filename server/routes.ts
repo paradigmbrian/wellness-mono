@@ -182,7 +182,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/lab-results/upload', isAuthenticated, upload.single('file'), async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { title, description, resultDate } = req.body;
+      const { title, description, resultDate, category } = req.body;
       
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
@@ -198,6 +198,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`File uploaded to S3: ${s3FileUrl}`);
       
+      // Prepare initial data structure with category if provided
+      const initialData = category ? { category } : {};
+      
       // Create the lab result entry with S3 URL
       const labResult = await storage.createLabResult({
         userId,
@@ -206,7 +209,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fileUrl: s3FileUrl,
         resultDate: resultDate ? new Date(resultDate) : undefined,
         status: 'pending',
-        processed: false
+        processed: false,
+        data: initialData
       });
       
       // If there's JSON data, try to analyze it
