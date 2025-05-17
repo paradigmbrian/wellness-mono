@@ -10,6 +10,7 @@ import {
   Settings,
   LogOut,
   Heart,
+  Calendar,
 } from "lucide-react";
 
 interface SidebarLinkProps {
@@ -76,6 +77,14 @@ export function Sidebar() {
             isActive={location === "/activity"}
           >
             Activity
+          </SidebarLink>
+
+          <SidebarLink
+            href="/workout-calendar"
+            icon={Calendar}
+            isActive={location === "/workout-calendar"}
+          >
+            Workout Calendar
           </SidebarLink>
 
           <SidebarLink

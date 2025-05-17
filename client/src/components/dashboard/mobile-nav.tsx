@@ -5,7 +5,8 @@ import {
   BarChart3, 
   CheckCircle, 
   User,
-  Menu 
+  Menu,
+  Calendar 
 } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -44,14 +45,14 @@ export function MobileNavigation() {
 
   return (
     <div className="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-neutral-100 z-10">
-      <div className="grid grid-cols-5 h-16">
+      <div className="grid grid-cols-6 h-16">
         <Link href="/">
           <a className={`flex flex-col items-center justify-center ${
             location === "/" || location === "/dashboard" 
               ? "text-primary" 
               : "text-neutral-500"
           }`}>
-            <LayoutDashboard className="h-6 w-6" />
+            <LayoutDashboard className="h-5 w-5" />
             <span className="text-xs mt-1">Dashboard</span>
           </a>
         </Link>
@@ -62,8 +63,8 @@ export function MobileNavigation() {
               ? "text-primary" 
               : "text-neutral-500"
           }`}>
-            <FileText className="h-6 w-6" />
-            <span className="text-xs mt-1">Lab Results</span>
+            <FileText className="h-5 w-5" />
+            <span className="text-xs mt-1">Labs</span>
           </a>
         </Link>
 
@@ -73,7 +74,7 @@ export function MobileNavigation() {
               ? "text-primary" 
               : "text-neutral-500"
           }`}>
-            <CheckCircle className="h-6 w-6" />
+            <CheckCircle className="h-5 w-5" />
             <span className="text-xs mt-1">Insights</span>
           </a>
         </Link>
@@ -84,8 +85,19 @@ export function MobileNavigation() {
               ? "text-primary" 
               : "text-neutral-500"
           }`}>
-            <BarChart3 className="h-6 w-6" />
+            <BarChart3 className="h-5 w-5" />
             <span className="text-xs mt-1">Activity</span>
+          </a>
+        </Link>
+        
+        <Link href="/workout-calendar">
+          <a className={`flex flex-col items-center justify-center ${
+            location === "/workout-calendar" 
+              ? "text-primary" 
+              : "text-neutral-500"
+          }`}>
+            <Calendar className="h-5 w-5" />
+            <span className="text-xs mt-1">Workouts</span>
           </a>
         </Link>
 
@@ -95,7 +107,7 @@ export function MobileNavigation() {
               ? "text-primary" 
               : "text-neutral-500"
           }`}>
-            <User className="h-6 w-6" />
+            <User className="h-5 w-5" />
             <span className="text-xs mt-1">Profile</span>
           </a>
         </Link>
