@@ -13,6 +13,7 @@ export interface ProcessResult {
   findings?: any[];
   regionalAssessment?: any;
   muscleBalance?: any;
+  supplementalResults?: any;
   status?: "normal" | "review" | "abnormal";
 }
 import { finished } from "stream/promises";
@@ -216,28 +217,44 @@ export async function processDexaScan(
 
     const result = JSON.parse(response.choices[0].message.content);
     
-    // Add category and metadata to result
-    result.category = "dexa";
-    result.processed = true;
-    result.userId = userId;
-    result.labResultId = labResultId;
-    result.resultDate = resultDate;
-    
-    return result;
-  } catch (error: any) {
-    console.error("Error processing DEXA scan:", error);
-    return {
+    // Ensure the result has the expected structure for DEXA scans
+    const structuredResult: ProcessResult = {
       category: "dexa",
       processed: true,
-      bodyFatPercentage: "N/A",
-      totalMass: "N/A",
-      fatTissue: "N/A",
-      leanTissue: "N/A",
-      bmc: "N/A",
-      regionalAssessment: {},
-      interpretation: "Failed to process DEXA scan. Please try again or contact support.",
-      error: error.message
+      status: "normal",
+      interpretation: result.interpretation || "Your DEXA scan results are ready. Review your body composition metrics.",
+      metrics: {
+        bodyFatPercentage: result.bodyFatPercentage || result.metrics?.bodyFatPercentage || "N/A",
+        totalMass: result.totalMass || result.metrics?.totalMass || "N/A",
+        fatTissue: result.fatTissue || result.metrics?.fatTissue || "N/A",
+        leanTissue: result.leanTissue || result.metrics?.leanTissue || "N/A",
+        bmc: result.bmc || result.metrics?.bmc || "N/A"
+      },
+      regionalAssessment: result.regionalAssessment || {},
+      muscleBalance: result.muscleBalance || {},
+      supplementalResults: result.supplementalResults || {}
     };
+    
+    return structuredResult;
+  } catch (error: any) {
+    console.error("Error processing DEXA scan:", error);
+    const errorResult: ProcessResult = {
+      category: "dexa",
+      processed: true,
+      status: "abnormal",
+      metrics: {
+        bodyFatPercentage: "N/A",
+        totalMass: "N/A",
+        fatTissue: "N/A",
+        leanTissue: "N/A",
+        bmc: "N/A"
+      },
+      regionalAssessment: {},
+      muscleBalance: {},
+      supplementalResults: {},
+      interpretation: "Failed to process DEXA scan. Please try again or contact support."
+    };
+    return errorResult;
   }
 }
 
