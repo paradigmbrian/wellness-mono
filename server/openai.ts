@@ -191,7 +191,7 @@ export async function processDexaScan(
   userId: string,
   labResultId: number,
   resultDate: string
-): Promise<any> {
+): Promise<ProcessResult> {
   try {
     // Download the file from S3
     const fileBuffer = await downloadFileFromS3(fileUrl);

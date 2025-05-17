@@ -213,46 +213,201 @@ export default function LabResults() {
     const resultCategory = result.data?.category || result.category || "other";
     
     if (resultCategory.toLowerCase() === "dexa") {
-      const dexaData = result.data?.dexaResults || sampleDexaData;
+      // Parse DEXA scan data from the result
+      let dexaData;
+      
+      try {
+        if (typeof result.data === 'string') {
+          dexaData = JSON.parse(result.data);
+        } else {
+          dexaData = result.data || {};
+        }
+      } catch (e) {
+        dexaData = {};
+      }
+      
+      // Extract metrics from the parsed data
+      const metrics = dexaData.metrics || {};
+      const regionalAssessment = dexaData.regionalAssessment || {};
+      const muscleBalance = dexaData.muscleBalance || {};
+      const interpretation = dexaData.interpretation || "Your DEXA scan results are available for review.";
+      
+      // Use fallback for basic visualization if data format is unknown
+      if (!metrics.bodyFatPercentage && !dexaData.metrics) {
+        // Fallback to the old structure if needed
+        return (
+          <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="bg-neutral-50 p-4 rounded-lg text-center">
+                <p className="text-sm text-neutral-500 mb-1">Body Fat</p>
+                <p className="text-2xl font-semibold">{dexaData.bodyFat || dexaData.bodyFatPercentage || "N/A"}</p>
+              </div>
+              <div className="bg-neutral-50 p-4 rounded-lg text-center">
+                <p className="text-sm text-neutral-500 mb-1">Lean Mass</p>
+                <p className="text-2xl font-semibold">{dexaData.leanMass || dexaData.leanTissue || "N/A"}</p>
+              </div>
+              <div className="bg-neutral-50 p-4 rounded-lg text-center">
+                <p className="text-sm text-neutral-500 mb-1">Bone Density</p>
+                <p className="text-2xl font-semibold">{dexaData.boneDensity || dexaData.bmc || "N/A"}</p>
+              </div>
+            </div>
+          </div>
+        );
+      }
+      
+      // Enhanced DEXA scan visualization with all requested metrics
       return (
-        <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-4">
-            <div className="bg-neutral-50 p-4 rounded-lg text-center">
-              <p className="text-sm text-neutral-500 mb-1">Body Fat</p>
-              <p className="text-2xl font-semibold">{dexaData.bodyFat}%</p>
-            </div>
-            <div className="bg-neutral-50 p-4 rounded-lg text-center">
-              <p className="text-sm text-neutral-500 mb-1">Lean Mass</p>
-              <p className="text-2xl font-semibold">{dexaData.leanMass} lbs</p>
-            </div>
-            <div className="bg-neutral-50 p-4 rounded-lg text-center">
-              <p className="text-sm text-neutral-500 mb-1">Bone Density</p>
-              <p className="text-2xl font-semibold">{dexaData.boneDensity} g/cm²</p>
+        <div className="space-y-6">
+          {/* Interpretation */}
+          <div className="bg-white p-4 rounded-lg border shadow-sm">
+            <h4 className="text-md font-medium mb-2">Analysis</h4>
+            <p className="text-neutral-700">{interpretation}</p>
+          </div>
+          
+          {/* Main Metrics */}
+          <div>
+            <h4 className="text-md font-medium mb-3">Key Body Composition Metrics</h4>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className="bg-neutral-50 p-4 rounded-lg text-center">
+                <p className="text-sm text-neutral-500 mb-1">Body Fat %</p>
+                <p className="text-2xl font-semibold">{metrics.bodyFatPercentage || "N/A"}</p>
+              </div>
+              <div className="bg-neutral-50 p-4 rounded-lg text-center">
+                <p className="text-sm text-neutral-500 mb-1">Total Mass</p>
+                <p className="text-2xl font-semibold">{metrics.totalMass || "N/A"}</p>
+              </div>
+              <div className="bg-neutral-50 p-4 rounded-lg text-center">
+                <p className="text-sm text-neutral-500 mb-1">Fat Tissue</p>
+                <p className="text-2xl font-semibold">{metrics.fatTissue || "N/A"}</p>
+              </div>
+              <div className="bg-neutral-50 p-4 rounded-lg text-center">
+                <p className="text-sm text-neutral-500 mb-1">Lean Tissue</p>
+                <p className="text-2xl font-semibold">{metrics.leanTissue || "N/A"}</p>
+              </div>
+              <div className="bg-neutral-50 p-4 rounded-lg text-center">
+                <p className="text-sm text-neutral-500 mb-1">BMC</p>
+                <p className="text-2xl font-semibold">{metrics.bmc || "N/A"}</p>
+              </div>
             </div>
           </div>
           
-          {dexaData.regions && (
+          {/* Regional Assessment */}
+          {regionalAssessment && Object.keys(regionalAssessment).length > 0 && (
             <div>
-              <h4 className="text-md font-medium mb-2">Body Composition by Region</h4>
+              <h4 className="text-md font-medium mb-3">Regional Assessment</h4>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-neutral-200 text-sm">
                   <thead>
                     <tr>
                       <th className="px-3 py-2 text-left font-medium text-neutral-500">Region</th>
                       <th className="px-3 py-2 text-left font-medium text-neutral-500">Fat %</th>
-                      <th className="px-3 py-2 text-left font-medium text-neutral-500">Lean Mass (lbs)</th>
+                      <th className="px-3 py-2 text-left font-medium text-neutral-500">Fat Mass</th>
+                      <th className="px-3 py-2 text-left font-medium text-neutral-500">Lean Mass</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100">
-                    {dexaData.regions.map((region, idx) => (
-                      <tr key={idx}>
-                        <td className="px-3 py-2 font-medium">{region.name}</td>
-                        <td className="px-3 py-2">{region.fat}%</td>
-                        <td className="px-3 py-2">{region.lean} lbs</td>
+                    {/* Arms */}
+                    {regionalAssessment.arms && (
+                      <>
+                        <tr>
+                          <td className="px-3 py-2 font-medium">Left Arm</td>
+                          <td className="px-3 py-2">{regionalAssessment.arms.left?.fat || "N/A"}</td>
+                          <td className="px-3 py-2">{regionalAssessment.arms.left?.fatMass || "N/A"}</td>
+                          <td className="px-3 py-2">{regionalAssessment.arms.left?.lean || "N/A"}</td>
+                        </tr>
+                        <tr>
+                          <td className="px-3 py-2 font-medium">Right Arm</td>
+                          <td className="px-3 py-2">{regionalAssessment.arms.right?.fat || "N/A"}</td>
+                          <td className="px-3 py-2">{regionalAssessment.arms.right?.fatMass || "N/A"}</td>
+                          <td className="px-3 py-2">{regionalAssessment.arms.right?.lean || "N/A"}</td>
+                        </tr>
+                      </>
+                    )}
+                    
+                    {/* Legs */}
+                    {regionalAssessment.legs && (
+                      <>
+                        <tr>
+                          <td className="px-3 py-2 font-medium">Left Leg</td>
+                          <td className="px-3 py-2">{regionalAssessment.legs.left?.fat || "N/A"}</td>
+                          <td className="px-3 py-2">{regionalAssessment.legs.left?.fatMass || "N/A"}</td>
+                          <td className="px-3 py-2">{regionalAssessment.legs.left?.lean || "N/A"}</td>
+                        </tr>
+                        <tr>
+                          <td className="px-3 py-2 font-medium">Right Leg</td>
+                          <td className="px-3 py-2">{regionalAssessment.legs.right?.fat || "N/A"}</td>
+                          <td className="px-3 py-2">{regionalAssessment.legs.right?.fatMass || "N/A"}</td>
+                          <td className="px-3 py-2">{regionalAssessment.legs.right?.lean || "N/A"}</td>
+                        </tr>
+                      </>
+                    )}
+                    
+                    {/* Trunk */}
+                    {regionalAssessment.trunk && (
+                      <tr>
+                        <td className="px-3 py-2 font-medium">Trunk</td>
+                        <td className="px-3 py-2">{regionalAssessment.trunk.fat || "N/A"}</td>
+                        <td className="px-3 py-2">{regionalAssessment.trunk.fatMass || "N/A"}</td>
+                        <td className="px-3 py-2">{regionalAssessment.trunk.lean || "N/A"}</td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          )}
+          
+          {/* Muscle Balance */}
+          {muscleBalance && Object.keys(muscleBalance).length > 0 && (
+            <div>
+              <h4 className="text-md font-medium mb-3">Muscle Balance Report</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-white border p-4 rounded-lg">
+                  <p className="text-sm text-neutral-500 mb-1">Arm Balance</p>
+                  <p className="font-medium">{muscleBalance.armBalance || "N/A"}</p>
+                </div>
+                <div className="bg-white border p-4 rounded-lg">
+                  <p className="text-sm text-neutral-500 mb-1">Leg Balance</p>
+                  <p className="font-medium">{muscleBalance.legBalance || "N/A"}</p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Supplemental Results */}
+          {dexaData.supplementalResults && Object.keys(dexaData.supplementalResults).length > 0 && (
+            <div>
+              <h4 className="text-md font-medium mb-3">Supplemental Results</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Object.entries(dexaData.supplementalResults).map(([key, value], idx) => (
+                  <div key={idx} className="bg-white border p-4 rounded-lg">
+                    <p className="text-sm text-neutral-500 mb-1">{key}</p>
+                    <p className="font-medium">{String(value)}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Findings */}
+          {dexaData.findings && dexaData.findings.length > 0 && (
+            <div>
+              <h4 className="text-md font-medium mb-3">Findings</h4>
+              <div className="space-y-2">
+                {dexaData.findings.map((finding: any, idx: number) => (
+                  <div key={idx} className="bg-white border p-4 rounded-lg">
+                    <p className="font-medium">{finding.marker}</p>
+                    <p className="text-sm">{finding.value}</p>
+                    {finding.status && (
+                      <Badge 
+                        variant={finding.status === "normal" ? "success" : "warning"} 
+                        className="mt-2"
+                      >
+                        {finding.status}
+                      </Badge>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           )}
