@@ -172,6 +172,64 @@ async function downloadFileFromS3(fileUrl: string): Promise<Buffer> {
 }
 
 /**
+ * Process DEXA scan data from a lab result file
+ */
+export async function processDexaScan(
+  fileUrl: string,
+  userId: string,
+  labResultId: number,
+  resultDate: string
+): Promise<any> {
+  try {
+    // Download the file from S3
+    const fileBuffer = await downloadFileFromS3(fileUrl);
+    const fileContent = fileBuffer.toString('utf-8');
+    
+    // Use OpenAI to analyze the DEXA scan content
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a fitness and body composition specialist. Extract and analyze DEXA scan data from the provided report. I need the following metrics: Total body fat percentage, Total Mass (lbs), Fat Tissue (lbs), Lean Tissue (lbs), Bone Mineral Content (BMC), Regional Assessment details for different body parts, Supplemental Results, and Muscle Balance Report metrics. Respond with a structured JSON object containing these metrics."
+        },
+        {
+          role: "user",
+          content: fileContent
+        }
+      ],
+      response_format: { type: "json_object" }
+    });
+
+    const result = JSON.parse(response.choices[0].message.content);
+    
+    // Add category and metadata to result
+    result.category = "dexa";
+    result.processed = true;
+    result.userId = userId;
+    result.labResultId = labResultId;
+    result.resultDate = resultDate;
+    
+    return result;
+  } catch (error: any) {
+    console.error("Error processing DEXA scan:", error);
+    return {
+      category: "dexa",
+      processed: true,
+      bodyFatPercentage: "N/A",
+      totalMass: "N/A",
+      fatTissue: "N/A",
+      leanTissue: "N/A",
+      bmc: "N/A",
+      regionalAssessment: {},
+      interpretation: "Failed to process DEXA scan. Please try again or contact support.",
+      error: error.message
+    };
+  }
+}
+
+/**
  * Extract bloodwork markers from a lab result file
  */
 export async function extractBloodworkMarkers(

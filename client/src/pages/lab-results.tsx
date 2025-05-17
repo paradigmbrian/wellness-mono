@@ -90,7 +90,26 @@ export default function LabResults() {
     }
     
     return labResults.filter((result: any) => {
-      const resultCategory = result.data?.category || result.category || "other";
+      let resultCategory;
+      
+      // First check if data is a string that needs to be parsed (from our initialData)
+      if (result.data && typeof result.data === 'string') {
+        try {
+          const parsedData = JSON.parse(result.data);
+          resultCategory = parsedData.category;
+        } catch (e) {
+          // If parsing fails, proceed with other checks
+        }
+      }
+      
+      // If we didn't get a category from parsing, check other locations
+      if (!resultCategory) {
+        resultCategory = result.data?.category || result.category;
+      }
+      
+      // Default to "other" if no category found
+      if (!resultCategory) resultCategory = "other";
+      
       return resultCategory.toLowerCase() === selectedCategory.toLowerCase();
     });
   };
