@@ -213,25 +213,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         data: initialData
       });
       
-      // If there's JSON data, try to analyze it
+      // If there's JSON data, try to analyze it or merge with existing data
       if (req.body.data) {
         try {
-          const data = JSON.parse(req.body.data);
-          const analysis = await analyzeLabResults(data);
+          let analysisData;
+          try {
+            const parsedData = JSON.parse(req.body.data);
+            analysisData = await analyzeLabResults(parsedData);
+          } catch (parseErr) {
+            // If not parseable or analysis fails, keep existing data with category
+            analysisData = initialData;
+          }
           
           // Update the lab result with the analysis
           await storage.updateLabResult(labResult.id, {
-            status: analysis.status,
-            data: analysis
+            status: analysisData.status || 'pending',
+            data: analysisData
           });
           
-          // Create an AI insight if there are any abnormal findings
-          if (analysis.status !== 'normal') {
+          // Create an AI insight if this is a bloodwork result with abnormal findings
+          if (analysisData && 
+              typeof analysisData === 'object' && 
+              'status' in analysisData && 
+              'interpretation' in analysisData && 
+              analysisData.status !== 'normal') {
             await storage.createAiInsight({
               userId,
-              content: `Your lab result "${title}" has been analyzed and requires attention. ${analysis.interpretation}`,
+              content: `Your lab result "${title}" has been analyzed and requires attention. ${analysisData.interpretation}`,
               category: 'lab_results',
-              severity: analysis.status === 'abnormal' ? 'alert' : 'warning'
+              severity: analysisData.status === 'abnormal' ? 'alert' : 'warning'
             });
           }
         } catch (err) {

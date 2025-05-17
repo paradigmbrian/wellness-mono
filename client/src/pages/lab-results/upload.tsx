@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -21,6 +22,7 @@ const uploadSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
   resultDate: z.string().optional(),
+  category: z.string().min(1, "Category is required"),
 });
 
 export default function UploadLabResult() {
