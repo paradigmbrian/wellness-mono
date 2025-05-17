@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,9 +12,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { getStatusVariant } from "@/lib/utils";
-import { format } from "date-fns";
-import { Download, FileText, MoreHorizontal, Plus, Trash2 } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { format, parseISO, isAfter, isBefore, addMonths } from "date-fns";
+import { Download, FileText, MoreHorizontal, Plus, Trash2, TrendingUp, Calendar, Activity } from "lucide-react";
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, AreaChart, Area } from "recharts";
 
 export default function LabResults() {
   const { user } = useAuth();
@@ -96,6 +96,58 @@ export default function LabResults() {
   };
   
   const filteredResults = getFilteredResults();
+  
+  // Process data for time-series visualizations
+  const timeSeriesData = useMemo(() => {
+    if (!labResults || labResults.length === 0) return [];
+    
+    // Get bloodwork markers that appear multiple times for trend analysis
+    // First collect all markers across all lab results
+    const allMarkers: Record<string, Array<{date: string, value: number, displayValue: string}>> = {};
+    
+    labResults.forEach((result: any) => {
+      if (result.data?.findings && Array.isArray(result.data.findings)) {
+        const resultDate = result.resultDate || new Date(result.uploadedAt).toISOString().split('T')[0];
+        
+        result.data.findings.forEach((finding: any) => {
+          const markerName = finding.marker;
+          if (!markerName) return;
+          
+          // Try to convert value to a number for charting
+          let numericValue = parseFloat(finding.value);
+          if (isNaN(numericValue)) {
+            // Try to extract numeric part if the value contains units
+            const match = finding.value.match(/^([\d.]+)/);
+            if (match) {
+              numericValue = parseFloat(match[1]);
+            } else {
+              return; // Skip if we can't extract a number
+            }
+          }
+          
+          if (!allMarkers[markerName]) {
+            allMarkers[markerName] = [];
+          }
+          
+          allMarkers[markerName].push({
+            date: resultDate,
+            value: numericValue,
+            displayValue: finding.value
+          });
+        });
+      }
+    });
+    
+    // Keep only markers that have multiple data points for trends
+    const trendableMarkers = Object.entries(allMarkers)
+      .filter(([_, values]) => values.length > 1)
+      .map(([name, values]) => ({
+        name,
+        values: values.sort((a, b) => a.date.localeCompare(b.date)) // Sort by date
+      }));
+      
+    return trendableMarkers;
+  }, [labResults]);
   
   // Sample charts data
   const resultStatusData = [
