@@ -485,6 +485,113 @@ export class MemStorage implements IStorage {
     this.connectedServices.set(`${userId}:${serviceName}`, updatedService);
     return true;
   }
+
+  // Workout operations
+  async getWorkouts(userId: string, startDate?: string, endDate?: string): Promise<Workout[]> {
+    const workouts = Array.from(this.workouts.values())
+      .filter(workout => workout.userId === userId);
+    
+    if (startDate && endDate) {
+      return workouts.filter(workout => {
+        const workoutDate = workout.date;
+        return workoutDate >= startDate && workoutDate <= endDate;
+      });
+    }
+    
+    return workouts;
+  }
+
+  async getWorkoutById(id: number): Promise<Workout | undefined> {
+    return this.workouts.get(id);
+  }
+
+  async createWorkout(workout: InsertWorkout): Promise<Workout> {
+    const id = this.nextWorkoutId++;
+    const now = new Date();
+    
+    const newWorkout: Workout = {
+      id,
+      ...workout,
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.workouts.set(id, newWorkout);
+    return newWorkout;
+  }
+
+  async updateWorkout(id: number, workout: Partial<InsertWorkout>): Promise<Workout | undefined> {
+    const existingWorkout = this.workouts.get(id);
+    
+    if (!existingWorkout) {
+      return undefined;
+    }
+    
+    const updatedWorkout: Workout = {
+      ...existingWorkout,
+      ...workout,
+      updatedAt: new Date()
+    };
+    
+    this.workouts.set(id, updatedWorkout);
+    return updatedWorkout;
+  }
+
+  async deleteWorkout(id: number): Promise<boolean> {
+    // First delete all related workout sets
+    Array.from(this.workoutSets.values())
+      .filter(set => set.workoutId === id)
+      .forEach(set => this.workoutSets.delete(set.id));
+    
+    return this.workouts.delete(id);
+  }
+
+  // Workout Sets operations
+  async getWorkoutSets(workoutId: number): Promise<WorkoutSet[]> {
+    return Array.from(this.workoutSets.values())
+      .filter(set => set.workoutId === workoutId)
+      .sort((a, b) => a.setNumber - b.setNumber);
+  }
+
+  async createWorkoutSet(workoutSet: InsertWorkoutSet): Promise<WorkoutSet> {
+    const id = this.nextWorkoutSetId++;
+    const now = new Date();
+    
+    const newWorkoutSet: WorkoutSet = {
+      id,
+      ...workoutSet,
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.workoutSets.set(id, newWorkoutSet);
+    return newWorkoutSet;
+  }
+
+  async updateWorkoutSet(id: number, workoutSet: Partial<InsertWorkoutSet>): Promise<WorkoutSet | undefined> {
+    const existingWorkoutSet = this.workoutSets.get(id);
+    
+    if (!existingWorkoutSet) {
+      return undefined;
+    }
+    
+    const updatedWorkoutSet: WorkoutSet = {
+      ...existingWorkoutSet,
+      ...workoutSet,
+      updatedAt: new Date()
+    };
+    
+    this.workoutSets.set(id, updatedWorkoutSet);
+    return updatedWorkoutSet;
+  }
+
+  async deleteWorkoutSet(id: number): Promise<boolean> {
+    return this.workoutSets.delete(id);
+  }
+
+  async batchCreateWorkoutSets(workoutSets: InsertWorkoutSet[]): Promise<WorkoutSet[]> {
+    return Promise.all(workoutSets.map(set => this.createWorkoutSet(set)));
+  }
 }
 
 export const storage = new MemStorage();

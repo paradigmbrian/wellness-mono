@@ -723,6 +723,214 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Workout routes
+  app.get('/api/workouts', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { startDate, endDate } = req.query;
+      
+      const workouts = await storage.getWorkouts(
+        userId,
+        startDate as string | undefined,
+        endDate as string | undefined
+      );
+      
+      res.json(workouts);
+    } catch (error: any) {
+      console.error("Error fetching workouts:", error);
+      res.status(500).json({ message: `Failed to fetch workouts: ${error.message}` });
+    }
+  });
+  
+  app.get('/api/workouts/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const workoutId = parseInt(req.params.id);
+      const workout = await storage.getWorkoutById(workoutId);
+      
+      if (!workout) {
+        return res.status(404).json({ message: "Workout not found" });
+      }
+      
+      // Security check - make sure the workout belongs to the current user
+      if (workout.userId !== req.user.claims.sub) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      res.json(workout);
+    } catch (error: any) {
+      console.error("Error fetching workout:", error);
+      res.status(500).json({ message: `Failed to fetch workout: ${error.message}` });
+    }
+  });
+  
+  app.post('/api/workouts', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const workoutData = req.body;
+      
+      const workout = await storage.createWorkout({
+        ...workoutData,
+        userId
+      });
+      
+      res.status(201).json(workout);
+    } catch (error: any) {
+      console.error("Error creating workout:", error);
+      res.status(500).json({ message: `Failed to create workout: ${error.message}` });
+    }
+  });
+  
+  app.put('/api/workouts/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const workoutId = parseInt(req.params.id);
+      const existingWorkout = await storage.getWorkoutById(workoutId);
+      
+      if (!existingWorkout) {
+        return res.status(404).json({ message: "Workout not found" });
+      }
+      
+      // Security check - make sure the workout belongs to the current user
+      if (existingWorkout.userId !== req.user.claims.sub) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const updatedWorkout = await storage.updateWorkout(workoutId, req.body);
+      res.json(updatedWorkout);
+    } catch (error: any) {
+      console.error("Error updating workout:", error);
+      res.status(500).json({ message: `Failed to update workout: ${error.message}` });
+    }
+  });
+  
+  app.delete('/api/workouts/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const workoutId = parseInt(req.params.id);
+      const existingWorkout = await storage.getWorkoutById(workoutId);
+      
+      if (!existingWorkout) {
+        return res.status(404).json({ message: "Workout not found" });
+      }
+      
+      // Security check - make sure the workout belongs to the current user
+      if (existingWorkout.userId !== req.user.claims.sub) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const success = await storage.deleteWorkout(workoutId);
+      
+      if (success) {
+        res.json({ message: "Workout deleted successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to delete workout" });
+      }
+    } catch (error: any) {
+      console.error("Error deleting workout:", error);
+      res.status(500).json({ message: `Failed to delete workout: ${error.message}` });
+    }
+  });
+  
+  // Workout Sets routes
+  app.get('/api/workouts/:workoutId/sets', isAuthenticated, async (req: any, res) => {
+    try {
+      const workoutId = parseInt(req.params.workoutId);
+      const workout = await storage.getWorkoutById(workoutId);
+      
+      if (!workout) {
+        return res.status(404).json({ message: "Workout not found" });
+      }
+      
+      // Security check - make sure the workout belongs to the current user
+      if (workout.userId !== req.user.claims.sub) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const sets = await storage.getWorkoutSets(workoutId);
+      res.json(sets);
+    } catch (error: any) {
+      console.error("Error fetching workout sets:", error);
+      res.status(500).json({ message: `Failed to fetch workout sets: ${error.message}` });
+    }
+  });
+  
+  app.post('/api/workouts/:workoutId/sets', isAuthenticated, async (req: any, res) => {
+    try {
+      const workoutId = parseInt(req.params.workoutId);
+      const workout = await storage.getWorkoutById(workoutId);
+      
+      if (!workout) {
+        return res.status(404).json({ message: "Workout not found" });
+      }
+      
+      // Security check - make sure the workout belongs to the current user
+      if (workout.userId !== req.user.claims.sub) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      // Handle single set or batch creation
+      if (Array.isArray(req.body)) {
+        // Batch create
+        const setsData = req.body.map(set => ({
+          ...set,
+          workoutId
+        }));
+        
+        const sets = await storage.batchCreateWorkoutSets(setsData);
+        res.status(201).json(sets);
+      } else {
+        // Single set
+        const setData = req.body;
+        const set = await storage.createWorkoutSet({
+          ...setData,
+          workoutId
+        });
+        
+        res.status(201).json(set);
+      }
+    } catch (error: any) {
+      console.error("Error creating workout set:", error);
+      res.status(500).json({ message: `Failed to create workout set: ${error.message}` });
+    }
+  });
+  
+  app.put('/api/workout-sets/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const setId = parseInt(req.params.id);
+      const workoutSet = await storage.updateWorkoutSet(setId, req.body);
+      
+      if (!workoutSet) {
+        return res.status(404).json({ message: "Workout set not found" });
+      }
+      
+      // Get the parent workout to check ownership
+      const workout = await storage.getWorkoutById(workoutSet.workoutId);
+      
+      if (!workout || workout.userId !== req.user.claims.sub) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      res.json(workoutSet);
+    } catch (error: any) {
+      console.error("Error updating workout set:", error);
+      res.status(500).json({ message: `Failed to update workout set: ${error.message}` });
+    }
+  });
+  
+  app.delete('/api/workout-sets/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const setId = parseInt(req.params.id);
+      const success = await storage.deleteWorkoutSet(setId);
+      
+      if (success) {
+        res.json({ message: "Workout set deleted successfully" });
+      } else {
+        res.status(404).json({ message: "Workout set not found" });
+      }
+    } catch (error: any) {
+      console.error("Error deleting workout set:", error);
+      res.status(500).json({ message: `Failed to delete workout set: ${error.message}` });
+    }
+  });
+
   // Create an HTTP server
   const httpServer = createServer(app);
 
