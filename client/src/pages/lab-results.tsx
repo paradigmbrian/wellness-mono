@@ -22,6 +22,7 @@ export default function LabResults() {
   const queryClient = useQueryClient();
   const [viewMode, setViewMode] = useState("list");
   const [selectedResult, setSelectedResult] = useState<any>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
   const { data: labResults, isLoading } = useQuery({
     queryKey: ["/api/lab-results"],
@@ -82,6 +83,20 @@ export default function LabResults() {
     }
   };
 
+  // Filter lab results by category
+  const getFilteredResults = () => {
+    if (!labResults || selectedCategory === "all") {
+      return labResults || [];
+    }
+    
+    return labResults.filter((result: any) => {
+      const resultCategory = result.data?.category || result.category || "other";
+      return resultCategory.toLowerCase() === selectedCategory.toLowerCase();
+    });
+  };
+  
+  const filteredResults = getFilteredResults();
+  
   // Sample charts data
   const resultStatusData = [
     { name: "Normal", value: labResults?.filter((r: any) => r.status === "normal").length || 0 },
@@ -114,6 +129,44 @@ export default function LabResults() {
               <TabsTrigger value="summary">Summary</TabsTrigger>
             </TabsList>
             
+            <div className="flex mt-4 mb-2 gap-2 overflow-x-auto pb-2">
+              <Badge 
+                variant={selectedCategory === "all" ? "default" : "outline"} 
+                className="cursor-pointer"
+                onClick={() => setSelectedCategory("all")}
+              >
+                All Results
+              </Badge>
+              <Badge 
+                variant={selectedCategory === "bloodwork" ? "default" : "outline"} 
+                className="cursor-pointer"
+                onClick={() => setSelectedCategory("bloodwork")}
+              >
+                Blood Work
+              </Badge>
+              <Badge 
+                variant={selectedCategory === "dexa" ? "default" : "outline"} 
+                className="cursor-pointer"
+                onClick={() => setSelectedCategory("dexa")}
+              >
+                DEXA Scans
+              </Badge>
+              <Badge 
+                variant={selectedCategory === "hormonal" ? "default" : "outline"} 
+                className="cursor-pointer"
+                onClick={() => setSelectedCategory("hormonal")}
+              >
+                Hormonal Panels
+              </Badge>
+              <Badge 
+                variant={selectedCategory === "other" ? "default" : "outline"} 
+                className="cursor-pointer"
+                onClick={() => setSelectedCategory("other")}
+              >
+                Other Results
+              </Badge>
+            </div>
+            
             <TabsContent value="list" className="mt-4">
               {isLoading ? (
                 <div className="space-y-4">
@@ -140,9 +193,9 @@ export default function LabResults() {
                       </Card>
                     ))}
                 </div>
-              ) : labResults?.length > 0 ? (
+              ) : filteredResults?.length > 0 ? (
                 <div className="space-y-4">
-                  {labResults.map((result: any) => (
+                  {filteredResults.map((result: any) => (
                     <Card key={result.id}>
                       <CardHeader className="pb-2">
                         <div className="flex justify-between items-start">
