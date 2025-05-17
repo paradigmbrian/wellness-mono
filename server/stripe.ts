@@ -1,8 +1,10 @@
 import Stripe from "stripe";
 
 if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
+  throw new Error("Missing required Stripe secret: STRIPE_SECRET_KEY");
 }
+
+console.log("Stripe secret key:", process.env.STRIPE_SECRET_KEY);
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2023-10-16",
@@ -11,18 +13,21 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 // Price IDs for different subscription tiers
 export const SUBSCRIPTION_PRICES = {
   // Monthly prices
-  basic_monthly: process.env.STRIPE_BASIC_MONTHLY_PRICE_ID || "price_1RPU7DQ9Txr92oVXGMhA7T6C",
-  pro_monthly: process.env.STRIPE_PRO_MONTHLY_PRICE_ID || "price_1RPU7bQ9Txr92oVXqWu3JY2s",
-  
+  basic_monthly: process.env.STRIPE_BASIC_MONTHLY_PRICE_ID || "N/A",
+  pro_monthly: process.env.STRIPE_PRO_MONTHLY_PRICE_ID || "N/A",
+
   // Yearly prices (with discount)
-  basic_yearly: process.env.STRIPE_BASIC_YEARLY_PRICE_ID || "price_1RPU7zQ9Txr92oVXF0e1JkIO",
-  pro_yearly: process.env.STRIPE_PRO_YEARLY_PRICE_ID || "price_1RPU8JQ9Txr92oVXIA5RfYPo"
+  basic_yearly: process.env.STRIPE_BASIC_YEARLY_PRICE_ID || "N/A",
+  pro_yearly: process.env.STRIPE_PRO_YEARLY_PRICE_ID || "N/A",
 };
 
 /**
  * Create a new customer in Stripe
  */
-export async function createCustomer(email: string, name?: string): Promise<Stripe.Customer> {
+export async function createCustomer(
+  email: string,
+  name?: string,
+): Promise<Stripe.Customer> {
   try {
     return await stripe.customers.create({
       email,
@@ -37,13 +42,16 @@ export async function createCustomer(email: string, name?: string): Promise<Stri
 /**
  * Create a new subscription for a customer
  */
-export async function createSubscription(customerId: string, priceId: string): Promise<Stripe.Subscription> {
+export async function createSubscription(
+  customerId: string,
+  priceId: string,
+): Promise<Stripe.Subscription> {
   try {
     return await stripe.subscriptions.create({
       customer: customerId,
       items: [{ price: priceId }],
-      payment_behavior: 'default_incomplete',
-      expand: ['latest_invoice.payment_intent'],
+      payment_behavior: "default_incomplete",
+      expand: ["latest_invoice.payment_intent"],
     });
   } catch (error: any) {
     console.error("Error creating Stripe subscription:", error);
@@ -54,7 +62,9 @@ export async function createSubscription(customerId: string, priceId: string): P
 /**
  * Get an existing customer's subscription
  */
-export async function getSubscription(subscriptionId: string): Promise<Stripe.Subscription> {
+export async function getSubscription(
+  subscriptionId: string,
+): Promise<Stripe.Subscription> {
   try {
     return await stripe.subscriptions.retrieve(subscriptionId);
   } catch (error: any) {
@@ -66,14 +76,17 @@ export async function getSubscription(subscriptionId: string): Promise<Stripe.Su
 /**
  * Update a customer's subscription
  */
-export async function updateSubscription(subscriptionId: string, priceId: string): Promise<Stripe.Subscription> {
+export async function updateSubscription(
+  subscriptionId: string,
+  priceId: string,
+): Promise<Stripe.Subscription> {
   try {
     // Get the current subscription
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-    
+
     // Find the subscription item ID
     const itemId = subscription.items.data[0].id;
-    
+
     // Update the subscription with the new price
     return await stripe.subscriptions.update(subscriptionId, {
       items: [{ id: itemId, price: priceId }],
@@ -87,7 +100,9 @@ export async function updateSubscription(subscriptionId: string, priceId: string
 /**
  * Cancel a subscription
  */
-export async function cancelSubscription(subscriptionId: string): Promise<Stripe.Subscription> {
+export async function cancelSubscription(
+  subscriptionId: string,
+): Promise<Stripe.Subscription> {
   try {
     return await stripe.subscriptions.cancel(subscriptionId);
   } catch (error: any) {
