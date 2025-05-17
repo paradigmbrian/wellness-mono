@@ -92,7 +92,7 @@ export default function LabResults() {
     return labResults.filter((result: any) => {
       let resultCategory;
       
-      // First check if data is a string that needs to be parsed (from our initialData)
+      // First check if data is a string that needs to be parsed
       if (result.data && typeof result.data === 'string') {
         try {
           const parsedData = JSON.parse(result.data);
@@ -105,6 +105,26 @@ export default function LabResults() {
       // If we didn't get a category from parsing, check other locations
       if (!resultCategory) {
         resultCategory = result.data?.category || result.category;
+      }
+      
+      // Check title for clues about category type
+      if (!resultCategory) {
+        const title = result.title?.toLowerCase() || "";
+        if (title.includes("dexa") || title.includes("body composition") || title.includes("bone density")) {
+          resultCategory = "dexa";
+        } else if (title.includes("blood") || title.includes("cbc") || title.includes("panel")) {
+          resultCategory = "bloodwork";
+        } else if (title.includes("hormone") || title.includes("testosterone")) {
+          resultCategory = "hormonal";
+        }
+      }
+      
+      // Normalize the category name to handle variations
+      if (resultCategory) {
+        const normalizedCategory = resultCategory.toLowerCase();
+        if (normalizedCategory.includes("dexa") || normalizedCategory.includes("body") || normalizedCategory.includes("composition")) {
+          resultCategory = "dexa";
+        }
       }
       
       // Default to "other" if no category found
@@ -603,6 +623,41 @@ export default function LabResults() {
                             Uploaded on {format(new Date(result.uploadedAt), "MMMM d, yyyy")}
                           </p>
                           <div className="flex space-x-2">
+                            {result.status === "pending" && (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                                onClick={() => {
+                                  toast({
+                                    title: "Processing lab result",
+                                    description: "This may take a moment..."
+                                  });
+                                  
+                                  // Call API to process the lab result
+                                  apiRequest("POST", `/api/lab-results/${result.id}/process`, {})
+                                    .then(() => {
+                                      queryClient.invalidateQueries({ queryKey: ["/api/lab-results"] });
+                                      toast({
+                                        title: "Success",
+                                        description: "Lab result processed successfully",
+                                        variant: "success"
+                                      });
+                                    })
+                                    .catch(error => {
+                                      toast({
+                                        title: "Processing failed",
+                                        description: error.message || "Failed to process lab result",
+                                        variant: "destructive"
+                                      });
+                                    });
+                                }}
+                              >
+                                <RefreshCw className="h-4 w-4 mr-2" />
+                                Process
+                              </Button>
+                            )}
+                            
                             {result.fileUrl && (
                               <Button 
                                 variant="outline" 
