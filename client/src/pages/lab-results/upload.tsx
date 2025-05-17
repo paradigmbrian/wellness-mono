@@ -42,6 +42,7 @@ export default function UploadLabResult() {
       title: "",
       description: "",
       resultDate: new Date().toISOString().split("T")[0],
+      category: "bloodwork", // Default to bloodwork
     },
   });
 
@@ -126,6 +127,9 @@ export default function UploadLabResult() {
       if (values.resultDate) {
         formData.append("resultDate", values.resultDate);
       }
+      
+      // Always include the category
+      formData.append("category", values.category);
       
       if (jsonData) {
         formData.append("data", jsonData);
@@ -247,6 +251,33 @@ export default function UploadLabResult() {
                           disabled={isUploading}
                         />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Result Type</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        disabled={isUploading}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select test type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="bloodwork">Blood Work</SelectItem>
+                          <SelectItem value="dexa">DEXA Scan</SelectItem>
+                          <SelectItem value="hormonal">Hormonal Panel</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
