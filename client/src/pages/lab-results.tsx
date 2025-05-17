@@ -115,6 +115,161 @@ export default function LabResults() {
     { name: "Triglycerides", normal: true, value: 120, reference: "< 150 mg/dL" },
     { name: "Glucose", normal: true, value: 92, reference: "70-99 mg/dL" },
   ];
+  
+  // DEXA scan sample data
+  const sampleDexaData = {
+    bodyFat: 22.5,
+    leanMass: 148.3,
+    boneDensity: 1.2,
+    regions: [
+      { name: "Arms", fat: 18.7, lean: 15.2 },
+      { name: "Legs", fat: 21.3, lean: 42.1 },
+      { name: "Trunk", fat: 24.8, lean: 67.5 },
+    ]
+  };
+  
+  // Hormonal panel sample data
+  const sampleHormonalData = [
+    { name: "Testosterone", value: 450, unit: "ng/dL", reference: "270-1070 ng/dL", normal: true },
+    { name: "Estradiol", value: 24, unit: "pg/mL", reference: "10-40 pg/mL", normal: true },
+    { name: "Cortisol", value: 18, unit: "μg/dL", reference: "5-23 μg/dL", normal: true },
+    { name: "TSH", value: 1.8, unit: "mIU/L", reference: "0.4-4.0 mIU/L", normal: true },
+    { name: "Free T4", value: 1.1, unit: "ng/dL", reference: "0.8-1.8 ng/dL", normal: true },
+  ];
+  
+  // Utility function to render the appropriate content based on lab result type
+  const renderLabResultContent = (result: any) => {
+    const resultCategory = result.data?.category || result.category || "other";
+    
+    if (resultCategory.toLowerCase() === "dexa") {
+      const dexaData = result.data?.dexaResults || sampleDexaData;
+      return (
+        <div className="space-y-4">
+          <div className="grid grid-cols-3 gap-4">
+            <div className="bg-neutral-50 p-4 rounded-lg text-center">
+              <p className="text-sm text-neutral-500 mb-1">Body Fat</p>
+              <p className="text-2xl font-semibold">{dexaData.bodyFat}%</p>
+            </div>
+            <div className="bg-neutral-50 p-4 rounded-lg text-center">
+              <p className="text-sm text-neutral-500 mb-1">Lean Mass</p>
+              <p className="text-2xl font-semibold">{dexaData.leanMass} lbs</p>
+            </div>
+            <div className="bg-neutral-50 p-4 rounded-lg text-center">
+              <p className="text-sm text-neutral-500 mb-1">Bone Density</p>
+              <p className="text-2xl font-semibold">{dexaData.boneDensity} g/cm²</p>
+            </div>
+          </div>
+          
+          {dexaData.regions && (
+            <div>
+              <h4 className="text-md font-medium mb-2">Body Composition by Region</h4>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-neutral-200 text-sm">
+                  <thead>
+                    <tr>
+                      <th className="px-3 py-2 text-left font-medium text-neutral-500">Region</th>
+                      <th className="px-3 py-2 text-left font-medium text-neutral-500">Fat %</th>
+                      <th className="px-3 py-2 text-left font-medium text-neutral-500">Lean Mass (lbs)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100">
+                    {dexaData.regions.map((region, idx) => (
+                      <tr key={idx}>
+                        <td className="px-3 py-2 font-medium">{region.name}</td>
+                        <td className="px-3 py-2">{region.fat}%</td>
+                        <td className="px-3 py-2">{region.lean} lbs</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    } 
+    else if (resultCategory.toLowerCase() === "hormonal") {
+      const hormonalData = result.data?.findings || sampleHormonalData;
+      return (
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-neutral-200 text-sm">
+            <thead>
+              <tr>
+                <th className="px-3 py-2 text-left font-medium text-neutral-500">Hormone</th>
+                <th className="px-3 py-2 text-left font-medium text-neutral-500">Value</th>
+                <th className="px-3 py-2 text-left font-medium text-neutral-500">Unit</th>
+                <th className="px-3 py-2 text-left font-medium text-neutral-500">Reference Range</th>
+                <th className="px-3 py-2 text-left font-medium text-neutral-500">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-100">
+              {hormonalData.map((hormone: any, idx: number) => (
+                <tr key={idx}>
+                  <td className="px-3 py-2 font-medium">{hormone.name}</td>
+                  <td className="px-3 py-2">{hormone.value}</td>
+                  <td className="px-3 py-2">{hormone.unit}</td>
+                  <td className="px-3 py-2 text-neutral-500">{hormone.reference}</td>
+                  <td className="px-3 py-2">
+                    <Badge variant={hormone.normal ? "success" : "warning"} className="font-normal">
+                      {hormone.normal ? "Normal" : "Out of Range"}
+                    </Badge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    }
+    else if (resultCategory.toLowerCase() === "bloodwork" || resultCategory.toLowerCase() === "all" || !resultCategory) {
+      return (
+        result.data?.findings && (
+          <div className="mb-4 overflow-x-auto">
+            <table className="min-w-full divide-y divide-neutral-200 text-sm">
+              <thead>
+                <tr>
+                  <th className="px-3 py-2 text-left font-medium text-neutral-500">Marker</th>
+                  <th className="px-3 py-2 text-left font-medium text-neutral-500">Value</th>
+                  <th className="px-3 py-2 text-left font-medium text-neutral-500">Reference</th>
+                  <th className="px-3 py-2 text-left font-medium text-neutral-500">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-100">
+                {result.data.findings.map((finding: any, idx: number) => (
+                  <tr key={idx}>
+                    <td className="px-3 py-2 font-medium">{finding.marker}</td>
+                    <td className="px-3 py-2">{finding.value}</td>
+                    <td className="px-3 py-2 text-neutral-500">{finding.reference}</td>
+                    <td className="px-3 py-2">
+                      <Badge variant={getStatusVariant(finding.status)} className="font-normal">
+                        {finding.status}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
+      );
+    }
+    
+    // Default or other types
+    return (
+      <div>
+        {result.description && (
+          <p className="text-neutral-700 mb-4">{result.description}</p>
+        )}
+        
+        {result.data?.summary && (
+          <div className="bg-neutral-50 p-4 rounded-lg mb-4">
+            <h4 className="text-md font-medium mb-2">Summary</h4>
+            <p className="text-neutral-700">{result.data.summary}</p>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <DashboardLayout 
@@ -215,38 +370,7 @@ export default function LabResults() {
                         </div>
                       </CardHeader>
                       <CardContent>
-                        {result.description && (
-                          <p className="text-neutral-700 mb-4">{result.description}</p>
-                        )}
-                        
-                        {result.data?.findings && (
-                          <div className="mb-4 overflow-x-auto">
-                            <table className="min-w-full divide-y divide-neutral-200 text-sm">
-                              <thead>
-                                <tr>
-                                  <th className="px-3 py-2 text-left font-medium text-neutral-500">Marker</th>
-                                  <th className="px-3 py-2 text-left font-medium text-neutral-500">Value</th>
-                                  <th className="px-3 py-2 text-left font-medium text-neutral-500">Reference</th>
-                                  <th className="px-3 py-2 text-left font-medium text-neutral-500">Status</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-neutral-100">
-                                {result.data.findings.map((finding: any, idx: number) => (
-                                  <tr key={idx}>
-                                    <td className="px-3 py-2 font-medium">{finding.marker}</td>
-                                    <td className="px-3 py-2">{finding.value}</td>
-                                    <td className="px-3 py-2 text-neutral-500">{finding.reference}</td>
-                                    <td className="px-3 py-2">
-                                      <Badge variant={getStatusVariant(finding.status)} className="font-normal">
-                                        {finding.status}
-                                      </Badge>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
+                        {renderLabResultContent(result)}
                         
                         <div className="flex justify-between items-center">
                           <p className="text-sm text-neutral-500">
