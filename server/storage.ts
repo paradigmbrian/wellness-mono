@@ -12,7 +12,11 @@ import {
   type HealthEvent,
   type InsertHealthEvent,
   type ConnectedService,
-  type InsertConnectedService
+  type InsertConnectedService,
+  type Workout,
+  type InsertWorkout,
+  type WorkoutSet,
+  type InsertWorkoutSet
 } from "@shared/schema";
 
 // Interface for storage operations
@@ -60,6 +64,20 @@ export interface IStorage {
   getConnectedService(userId: string, serviceName: string): Promise<ConnectedService | undefined>;
   upsertConnectedService(connectedService: InsertConnectedService): Promise<ConnectedService>;
   disconnectService(userId: string, serviceName: string): Promise<boolean>;
+  
+  // Workout operations
+  getWorkouts(userId: string, startDate?: string, endDate?: string): Promise<Workout[]>;
+  getWorkoutById(id: number): Promise<Workout | undefined>;
+  createWorkout(workout: InsertWorkout): Promise<Workout>;
+  updateWorkout(id: number, workout: Partial<InsertWorkout>): Promise<Workout | undefined>;
+  deleteWorkout(id: number): Promise<boolean>;
+  
+  // Workout Sets operations
+  getWorkoutSets(workoutId: number): Promise<WorkoutSet[]>;
+  createWorkoutSet(workoutSet: InsertWorkoutSet): Promise<WorkoutSet>;
+  updateWorkoutSet(id: number, workoutSet: Partial<InsertWorkoutSet>): Promise<WorkoutSet | undefined>;
+  deleteWorkoutSet(id: number): Promise<boolean>;
+  batchCreateWorkoutSets(workoutSets: InsertWorkoutSet[]): Promise<WorkoutSet[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -70,6 +88,8 @@ export class MemStorage implements IStorage {
   private aiInsights: Map<number, AiInsight> = new Map();
   private healthEvents: Map<number, HealthEvent> = new Map();
   private connectedServices: Map<string, ConnectedService> = new Map();
+  private workouts: Map<number, Workout> = new Map();
+  private workoutSets: Map<number, WorkoutSet> = new Map();
   
   private nextLabResultId = 1;
   private nextBloodworkMarkerId = 1;
@@ -77,6 +97,8 @@ export class MemStorage implements IStorage {
   private nextAiInsightId = 1;
   private nextHealthEventId = 1;
   private nextConnectedServiceId = 1;
+  private nextWorkoutId = 1;
+  private nextWorkoutSetId = 1;
 
   // User operations
   async getUser(id: string): Promise<User | undefined> {

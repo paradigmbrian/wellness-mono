@@ -150,7 +150,64 @@ export const insertHealthEventSchema = createInsertSchema(healthEvents).omit({
   createdAt: true,
 });
 
+// Workouts table
+export const workouts = pgTable("workouts", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  title: varchar("title").notNull(),
+  description: text("description"),
+  date: date("date").notNull(),
+  startTime: varchar("start_time"), // stored as "HH:MM" format
+  endTime: varchar("end_time"),     // stored as "HH:MM" format
+  activityType: varchar("activity_type").notNull(), // e.g., "running", "cycling", "strength", etc.
+  plannedDistance: numeric("planned_distance"), // in km or miles
+  actualDistance: numeric("actual_distance"),   // in km or miles
+  plannedDuration: integer("planned_duration"), // in minutes
+  actualDuration: integer("actual_duration"),   // in minutes
+  intensity: varchar("intensity"), // e.g., "easy", "moderate", "hard"
+  feelingScore: integer("feeling_score"), // 1-10 rating
+  notes: text("notes"),
+  isCompleted: boolean("is_completed").default(false),
+  isRecurring: boolean("is_recurring").default(false),
+  recurringPattern: varchar("recurring_pattern"), // e.g., "weekly", "monthly"
+  recurringDays: text("recurring_days"),         // e.g., "1,3,5" for Mon,Wed,Fri
+  tssScore: integer("tss_score"),                // Training Stress Score
+  caloriesBurned: integer("calories_burned"),
+  averageHeartRate: integer("average_heart_rate"),
+  maxHeartRate: integer("max_heart_rate"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Workout Sets table for strength training
+export const workoutSets = pgTable("workout_sets", {
+  id: serial("id").primaryKey(),
+  workoutId: integer("workout_id").notNull().references(() => workouts.id),
+  exerciseName: varchar("exercise_name").notNull(),
+  setNumber: integer("set_number").notNull(),
+  weight: numeric("weight"), // in kg or lbs
+  reps: integer("reps"),
+  duration: integer("duration"), // in seconds, for timed exercises
+  restTime: integer("rest_time"), // in seconds
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const insertConnectedServiceSchema = createInsertSchema(connectedServices).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Workout schemas
+export const insertWorkoutSchema = createInsertSchema(workouts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertWorkoutSetSchema = createInsertSchema(workoutSets).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
@@ -177,3 +234,9 @@ export type HealthEvent = typeof healthEvents.$inferSelect;
 
 export type InsertConnectedService = z.infer<typeof insertConnectedServiceSchema>;
 export type ConnectedService = typeof connectedServices.$inferSelect;
+
+export type InsertWorkout = z.infer<typeof insertWorkoutSchema>;
+export type Workout = typeof workouts.$inferSelect;
+
+export type InsertWorkoutSet = z.infer<typeof insertWorkoutSetSchema>;
+export type WorkoutSet = typeof workoutSets.$inferSelect;
