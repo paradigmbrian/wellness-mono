@@ -196,12 +196,13 @@ export async function processDexaScan(
       `Processing DEXA scan file for user ${userId}, lab result ${labResultId}`,
     );
 
-    // Initialize default DEXA scan data
-    let dexaData = {
-      summaryResults: "N/A",
-      regionalAssessment: "N/A",
-      supplementalResults: "N/A",
-      muscleBalanceReport: "N/A",
+    // Initialize default DEXA scan data structure
+    let dexaScanMetrics = {
+      bodyFatPercentage: "N/A",
+      totalMass: "N/A",
+      fatTissue: "N/A",
+      leanTissue: "N/A",
+      bmc: "N/A",
     };
 
     // Use OpenAI to extract metrics from DEXA scans
@@ -264,7 +265,7 @@ If you cannot find an exact value, use a realistic value based on typical adult 
         console.log("Successfully extracted DEXA scan data via OpenAI");
 
         // Update dexaData with the extracted values
-        dexaData = {
+        dexaScanMetrics = {
           bodyFatPercentage: result.bodyFatPercentage || "N/A",
           totalMass: result.totalMass || "N/A",
           fatTissue: result.fatTissue || "N/A",
@@ -287,7 +288,10 @@ If you cannot find an exact value, use a realistic value based on typical adult 
       status: "normal",
       interpretation:
         "Your DEXA scan results have been analyzed. Your body composition data is displayed below.",
-      ...dexaData,
+      summaryResults: dexaScanMetrics, // Use the metrics directly
+      regionalAssessment: "N/A",
+      supplementalResults: "N/A",
+      muscleBalanceReport: "N/A"
     };
 
     return structuredResult;
@@ -301,13 +305,16 @@ If you cannot find an exact value, use a realistic value based on typical adult 
       status: "review",
       interpretation:
         "There was an error processing your DEXA scan. Please try again or contact support.",
-      metrics: {
+      summaryResults: {
         bodyFatPercentage: "N/A",
         totalMass: "N/A",
         fatTissue: "N/A",
         leanTissue: "N/A",
         bmc: "N/A",
       },
+      regionalAssessment: "N/A",
+      supplementalResults: "N/A",
+      muscleBalanceReport: "N/A"
     };
 
     return errorResult;
