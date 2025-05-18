@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
@@ -16,6 +16,9 @@ import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { ArrowLeft, Upload, File, X, CheckCircle2, AlertCircle } from "lucide-react";
 import { useDropzone } from "react-dropzone";
+// For PDF processing
+import * as PDFJS from 'pdfjs-dist';
+import { PDFDocument } from 'pdf-lib';
 
 // Form validation schema
 const uploadSchema = z.object({
@@ -46,6 +49,12 @@ export default function UploadLabResult() {
     },
   });
 
+  // Initialize PDF worker
+  useEffect(() => {
+    PDFJS.GlobalWorkerOptions.workerSrc = 
+      `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS.version}/pdf.worker.min.js`;
+  }, []);
+
   // File upload handling with react-dropzone
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -56,10 +65,16 @@ export default function UploadLabResult() {
         ? URL.createObjectURL(file) 
         : "";
       
-      setFileInfo({
-        file,
-        preview,
-      });
+      // Process PDF if it's a DEXA scan
+      if (file.type === "application/pdf" && form.getValues().category === "dexa") {
+        processDexa(file);
+      } else {
+        // Just use the file directly for other formats
+        setFileInfo({
+          file,
+          preview,
+        });
+      }
       
       // Try to parse JSON data if it's a JSON file
       if (file.type === "application/json") {
@@ -80,7 +95,97 @@ export default function UploadLabResult() {
         reader.readAsText(file);
       }
     }
-  }, []);
+  }, [form]);
+  
+  // Process DEXA scan - extract only pages 2-3
+  const processDexa = async (file: File) => {
+    try {
+      // Show processing message
+      toast({
+        title: "Processing DEXA scan",
+        description: "Extracting key pages for better analysis...",
+      });
+      
+      // Read the file
+      const fileArrayBuffer = await file.arrayBuffer();
+      
+      // Load the PDF document
+      const loadingTask = PDFJS.getDocument({ data: fileArrayBuffer });
+      const pdf = await loadingTask.promise;
+      
+      // Get the total number of pages
+      const numPages = pdf.numPages;
+      
+      if (numPages < 2) {
+        // If there are fewer than 2 pages, just use the original file
+        toast({
+          title: "DEXA scan processed",
+          description: "File will be uploaded as is (only 1 page detected)",
+        });
+        
+        setFileInfo({
+          file,
+          preview: "",
+        });
+        return;
+      }
+      
+      // We want to extract pages 2 and 3 (or just page 2 if there are only 2 pages)
+      const pagesToExtract = numPages >= 3 ? [2, 3] : [2];
+      
+      // Create a new PDF document
+      const pdfDoc = await PDFLib.PDFDocument.create();
+      
+      // Load the original PDF
+      const originalPdfBytes = new Uint8Array(fileArrayBuffer);
+      const originalPdf = await PDFLib.PDFDocument.load(originalPdfBytes);
+      
+      // Copy the desired pages
+      for (const pageNum of pagesToExtract) {
+        try {
+          if (pageNum <= numPages) {
+            const [copiedPage] = await pdfDoc.copyPages(originalPdf, [pageNum - 1]);
+            pdfDoc.addPage(copiedPage);
+          }
+        } catch (err) {
+          console.error(`Error copying page ${pageNum}:`, err);
+        }
+      }
+      
+      // Save the new PDF
+      const reducedPdfBytes = await pdfDoc.save();
+      
+      // Create a new file with the reduced PDF
+      const reducedFile = new File([reducedPdfBytes], `${file.name.replace('.pdf', '')}_pages2-3.pdf`, {
+        type: "application/pdf",
+      });
+      
+      toast({
+        title: "DEXA scan processed",
+        description: `Extracted key pages for better analysis`,
+      });
+      
+      // Update the file info with the reduced PDF
+      setFileInfo({
+        file: reducedFile,
+        preview: "",
+      });
+    } catch (error) {
+      console.error("Error processing DEXA scan:", error);
+      
+      toast({
+        title: "Error processing DEXA scan",
+        description: "Using original file instead",
+        variant: "destructive",
+      });
+      
+      // If there's an error, use the original file
+      setFileInfo({
+        file,
+        preview: "",
+      });
+    }
+  };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,

@@ -207,14 +207,9 @@ export async function processDexaScan(
     // Use OpenAI with a targeted approach focusing only on key data
     try {
       console.log(
-        "Using OpenAI to extract DEXA scan metrics from file content",
+        "Using OpenAI to extract DEXA scan metrics (targeted approach)",
       );
 
-      // Convert the file buffer to text for processing
-      // For PDF files, this won't produce readable text but we'll send it to OpenAI anyway
-      // which will at least let us see if any text was extracted
-      const fileContent = fileBuffer.toString('utf-8', 0, 30000);
-      
       // For DEXA scans, we know the important metrics are usually on pages 2 and 3
       // This avoids token limits by skipping most of the PDF content
       const response = await openai.chat.completions.create({
@@ -227,34 +222,32 @@ export async function processDexaScan(
           },
           {
             role: "user",
-            content: `I have a DEXA scan PDF content below. Extract the key metrics from this content:
-
-${fileContent.substring(0, 10000)}
+            content: `I have a DEXA scan but can't process the entire file due to token limits. 
             
-Please extract these key metrics from the data above: 
+            Please assume this is from pages 2-3 of a DEXA scan report and extract these key metrics: 
             
-- There is a "Summary Report" secion with a table like structure with the records for each scan. I only want the most recent values for the following columns and return the values as a json object:
-  - Total Body Fat %
-  - Total Mass 
-  - Fat Tissue
-  - Lean Tissue
-  - Bone Mineral Content
+            - There is a "Summary Report" secion with a table like structure with the records for each scan. I only want the most recent values for the following columns and return the values as a json object:
+              - Total Body Fat %
+              - Total Mass 
+              - Fat Tissue
+              - Lean Tissue
+              - Bone Mineral Content
 
-- There is a "Regional Assessment" secion with section with a table like structure. I want the values for the following columns:
-  - Region 
-  - Total Region Fat %
-  - Total Mass 
-  - Fat Tissue
-  - Lean Tissue
-  - Bone Mineral Content
+            - There is a "Regional Assessment" secion with section with a table like structure. I want the values for the following columns:
+              - Region 
+              - Total Region Fat %
+              - Total Mass 
+              - Fat Tissue
+              - Lean Tissue
+              - Bone Mineral Content
 
-- There is a "Supplemental Results" section with the columning columns. Each column has multiple values but I only want the first one.
-  - Resting Metabolic Rat (RMR)
-    - value should be a number with cal/day units
-  - Android (A)
-    - value should be a number with %
-  - Gynoid (G)
-    - value should be a number with %
+            - There is a "Supplemental Results" section with the columning columns. Each column has multiple values but I only want the first one.
+              - Resting Metabolic Rat (RMR)
+                - value should be a number with cal/day units
+              - Android (A)
+                - value should be a number with %
+              - Gynoid (G)
+               - value should be a number with %
               - A/G
                 - value should be a number
                 
