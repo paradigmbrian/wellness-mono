@@ -8,12 +8,11 @@ import { Readable } from "stream";
 export interface ProcessResult {
   category: string;
   processed: boolean;
-  interpretation?: string;
-  metrics?: any;
-  findings?: any[];
+  interpretation: string;
+  summaryResults?: any;
   regionalAssessment?: any;
-  muscleBalance?: any;
   supplementalResults?: any;
+  muscleBalanceReport?: any;
   status?: "normal" | "review" | "abnormal";
 }
 import { finished } from "stream/promises";
@@ -35,7 +34,7 @@ const s3Client = new S3Client({
  */
 export async function generateHealthInsights(
   healthData: any,
-  labResults: any[]
+  labResults: any[],
 ): Promise<{
   insights: Array<{
     content: string;
@@ -74,15 +73,13 @@ export async function generateHealthInsights(
 /**
  * Analyze lab results to provide interpretations
  */
-export async function analyzeLabResults(
-  labData: any
-): Promise<{
+export async function analyzeLabResults(labData: any): Promise<{
   interpretation: string;
   status: "normal" | "review" | "abnormal";
-  findings: Array<{ 
-    marker: string; 
-    value: string; 
-    reference: string; 
+  findings: Array<{
+    marker: string;
+    value: string;
+    reference: string;
     status: string;
     recommendation?: string;
   }>;
@@ -115,19 +112,17 @@ export async function analyzeLabResults(
 /**
  * Generate a personalized health plan based on user data
  */
-export async function generateHealthPlan(
-  userData: any
-): Promise<{
+export async function generateHealthPlan(userData: any): Promise<{
   plan: {
     title: string;
     description: string;
-    recommendations: Array<{ 
-      category: string; 
-      title: string; 
-      description: string; 
+    recommendations: Array<{
+      category: string;
+      title: string;
+      description: string;
       actionItems: string[];
     }>;
-  }
+  };
 }> {
   try {
     const response = await openai.chat.completions.create({
@@ -162,21 +157,21 @@ async function downloadFileFromS3(fileUrl: string): Promise<Buffer> {
     // Extract the key from the S3 URL
     const urlParts = new URL(fileUrl);
     const key = urlParts.pathname.substring(1); // Remove leading slash
-    
+
     const getObjectParams = {
       Bucket: process.env.AWS_S3_BUCKET as string,
-      Key: key
+      Key: key,
     };
-    
+
     const response = await s3Client.send(new GetObjectCommand(getObjectParams));
     const stream = response.Body as Readable;
-    
+
     // Convert stream to buffer
     const chunks: Buffer[] = [];
     for await (const chunk of stream) {
       chunks.push(Buffer.from(chunk));
     }
-    
+
     return Buffer.concat(chunks);
   } catch (error: any) {
     console.error("Error downloading file from S3:", error);
@@ -185,33 +180,36 @@ async function downloadFileFromS3(fileUrl: string): Promise<Buffer> {
 }
 
 /**
- * Process DEXA scan data from a lab result file 
+ * Process DEXA scan data from a lab result file
  */
 export async function processDexaScan(
   fileUrl: string,
   userId: string,
   labResultId: number,
-  resultDate: string
+  resultDate: string,
 ): Promise<ProcessResult> {
   try {
     // Download the file from S3
     const fileBuffer = await downloadFileFromS3(fileUrl);
-    
-    console.log(`Processing DEXA scan file for user ${userId}, lab result ${labResultId}`);
-    
+
+    console.log(
+      `Processing DEXA scan file for user ${userId}, lab result ${labResultId}`,
+    );
+
     // Initialize default DEXA scan data
     let dexaData = {
-      bodyFatPercentage: "N/A",
-      totalMass: "N/A",
-      fatTissue: "N/A",
-      leanTissue: "N/A",
-      bmc: "N/A"
+      summaryResults: "N/A",
+      regionalAssessment: "N/A",
+      supplementalResults: "N/A",
+      muscleBalanceReport: "N/A",
     };
-    
+
     // Use OpenAI with a targeted approach focusing only on key data
     try {
-      console.log("Using OpenAI to extract DEXA scan metrics (targeted approach)");
-      
+      console.log(
+        "Using OpenAI to extract DEXA scan metrics (targeted approach)",
+      );
+
       // For DEXA scans, we know the important metrics are usually on pages 2 and 3
       // This avoids token limits by skipping most of the PDF content
       const response = await openai.chat.completions.create({
@@ -219,159 +217,103 @@ export async function processDexaScan(
         messages: [
           {
             role: "system",
-            content: "You are a DEXA scan analyst. Your task is to extract key metrics from DEXA scan data. Respond only with a JSON object containing the requested metrics."
+            content:
+              "You are a DEXA scan analyst. Your task is to extract key metrics from DEXA scan data. Respond only with a JSON object containing the requested metrics.",
           },
           {
             role: "user",
             content: `I have a DEXA scan but can't process the entire file due to token limits. 
             
             Please assume this is from pages 2-3 of a DEXA scan report and extract these key metrics: 
-            - Body Fat Percentage (e.g., 26.8%)
-            - Total Mass (e.g., 167.2 lbs)
-            - Fat Tissue (e.g., 44.8 lbs)
-            - Lean Tissue (e.g., 118.5 lbs)
-            - Bone Mineral Content (e.g., 3.9 lbs)
             
-            These values are typically found in the "Body Composition" or "Overall Results" section.
+            - There is a "Summary Report" secion with a table like structure with the records for each scan. I only want the most recent values for the following columns and return the values as a json object:
+              - Total Body Fat %
+              - Total Mass 
+              - Fat Tissue
+              - Lean Tissue
+              - Bone Mineral Content
+
+            - There is a "Regional Assessment" secion with section with a table like structure. I want the values for the following columns:
+              - Region 
+              - Total Region Fat %
+              - Total Mass 
+              - Fat Tissue
+              - Lean Tissue
+              - Bone Mineral Content
+
+            - There is a "Supplemental Results" section with the columning columns. Each column has multiple values but I only want the first one.
+              - Resting Metabolic Rat (RMR)
+                - value should be a number with cal/day units
+              - Android (A)
+                - value should be a number with %
+              - Gynoid (G)
+               - value should be a number with %
+              - A/G
+                - value should be a number
+                
+            - There is a "Muscle Balance Report" section with a table like structure. I want the values for each column of the first record:
+              - % Fat
+              - Total Mass
+              - Lean Mass
+              - BMC
             
-            Reply ONLY with a JSON object with these keys: bodyFatPercentage, totalMass, fatTissue, leanTissue, bmc.
-            Do not include any explanation or additional text. If you cannot determine a value with confidence, use a representative value that would be common for an average adult.`
-          }
+            
+            Reply ONLY with a JSON object. The root keys should be summaryResults, regionalAssessment, supplementalResults, muscleBalanceReport and be mapped to the different sections above and have key/value pairs for the extracted information from above. If no information is found for key, use "N/A" for the value.`,
+          },
         ],
-        response_format: { type: "json_object" }
+        response_format: { type: "json_object" },
       });
-      
+
       try {
         const result = JSON.parse(response.choices[0].message.content);
         console.log("Successfully extracted DEXA scan data via OpenAI");
-        
+
         // Update dexaData with the extracted values
         dexaData = {
-          bodyFatPercentage: result.bodyFatPercentage || "26.8%",
-          totalMass: result.totalMass || "167.2 lbs",
-          fatTissue: result.fatTissue || "44.8 lbs",
-          leanTissue: result.leanTissue || "118.5 lbs",
-          bmc: result.bmc || "3.9 lbs"
+          summaryResults: result.summaryResults,
+          regionalAssessment: result.regionalAssessment,
+          supplementalResults: result.supplementalResults,
+          muscleBalanceReport: result.muscleBalanceReport,
         };
-        
       } catch (parseError) {
         console.error("Error parsing OpenAI response:", parseError);
         // Fall back to sample data if parsing fails
-        dexaData = {
-          bodyFatPercentage: "26.8%",
-          totalMass: "167.2 lbs",
-          fatTissue: "44.8 lbs",
-          leanTissue: "118.5 lbs", 
-          bmc: "3.9 lbs"
-        };
       }
     } catch (aiError) {
       console.error("Error using OpenAI to extract DEXA data:", aiError);
       // Fall back to sample data if OpenAI fails
-      console.log("Using sample DEXA scan data as fallback");
-      dexaData = {
-        bodyFatPercentage: "26.8%",
-        totalMass: "167.2 lbs",
-        fatTissue: "44.8 lbs",
-        leanTissue: "118.5 lbs", 
-        bmc: "3.9 lbs"
-      };
     }
-    
-    // Extract or create regional assessment data
-    const regionalAssessment = {
-      arms: {
-        left: { fat: "2.3 lbs", lean: "7.5 lbs" },
-        right: { fat: "2.2 lbs", lean: "7.8 lbs" }
-      },
-      legs: {
-        left: { fat: "8.5 lbs", lean: "19.6 lbs" },
-        right: { fat: "8.4 lbs", lean: "19.8 lbs" }
-      }, 
-      trunk: { fat: "20.2 lbs", lean: "59.3 lbs" }
-    };
-    
-    // Muscle balance data
-    const muscleBalance = {
-      armSymmetry: "Good (96% match)",
-      legSymmetry: "Excellent (98% match)",
-      upperToLowerRatio: "1.32 (balanced)"
-    };
-    
-    // Supplemental results data
-    const supplementalResults = {
-      androidToGynoidRatio: "0.92",
-      visceralFat: "Level 8",
-      boneDensity: "Normal"
-    };
-    
-    // Format the findings for display
-    const findings = [
-      {
-        name: "Body Fat Percentage",
-        value: dexaData.bodyFatPercentage,
-        status: "normal"
-      },
-      {
-        name: "Total Mass",
-        value: dexaData.totalMass,
-        status: "normal"
-      },
-      {
-        name: "Fat Tissue",
-        value: dexaData.fatTissue,
-        status: "normal" 
-      },
-      {
-        name: "Lean Tissue",
-        value: dexaData.leanTissue,
-        status: "normal"
-      },
-      {
-        name: "Bone Mineral Content",
-        value: dexaData.bmc,
-        status: "normal"
-      }
-    ];
-    
+
     // Create the structured result
     const structuredResult: ProcessResult = {
       category: "dexa",
       processed: true,
       status: "normal",
-      interpretation: "Your DEXA scan results have been analyzed. Your body composition data is displayed below.",
-      metrics: {
-        bodyFatPercentage: dexaData.bodyFatPercentage,
-        totalMass: dexaData.totalMass,
-        fatTissue: dexaData.fatTissue,
-        leanTissue: dexaData.leanTissue,
-        bmc: dexaData.bmc
-      },
-      regionalAssessment,
-      muscleBalance,
-      supplementalResults,
-      findings
+      interpretation:
+        "Your DEXA scan results have been analyzed. Your body composition data is displayed below.",
+      ...dexaData,
     };
-    
+
     return structuredResult;
   } catch (error: any) {
     console.error("Error processing DEXA scan:", error);
-    
+
     // Return an error result
     const errorResult: ProcessResult = {
       category: "dexa",
       processed: false,
       status: "review",
-      interpretation: "There was an error processing your DEXA scan. Please try again or contact support.",
+      interpretation:
+        "There was an error processing your DEXA scan. Please try again or contact support.",
       metrics: {
         bodyFatPercentage: "N/A",
         totalMass: "N/A",
         fatTissue: "N/A",
         leanTissue: "N/A",
-        bmc: "N/A"
-      }
+        bmc: "N/A",
+      },
     };
-    
+
     return errorResult;
   }
 }
@@ -383,13 +325,13 @@ export async function extractBloodworkMarkers(
   fileUrl: string,
   userId: string,
   labResultId: number,
-  resultDate: string
+  resultDate: string,
 ): Promise<InsertBloodworkMarker[]> {
   try {
     // Download the file from S3
     const fileBuffer = await downloadFileFromS3(fileUrl);
-    const fileContent = fileBuffer.toString('utf-8');
-    
+    const fileContent = fileBuffer.toString("utf-8");
+
     // Use OpenAI to analyze the file content and extract bloodwork markers
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -397,36 +339,42 @@ export async function extractBloodworkMarkers(
         {
           role: "system",
           content:
-            "You are a medical laboratory specialist AI. Extract bloodwork markers from the provided lab report. For each marker, extract the name, value, unit, and reference range. Analyze if the value is abnormal based on the reference range. Categorize each marker (e.g., Lipids, Metabolic, Thyroid, etc.). Respond with a JSON object containing these extracted markers in this format: { 'markers': [{ 'name': string, 'value': number, 'unit': string, 'minRange': number or null, 'maxRange': number or null, 'isAbnormal': boolean, 'category': string }] }."
+            "You are a medical laboratory specialist AI. Extract bloodwork markers from the provided lab report. For each marker, extract the name, value, unit, and reference range. Analyze if the value is abnormal based on the reference range. Categorize each marker (e.g., Lipids, Metabolic, Thyroid, etc.). Respond with a JSON object containing these extracted markers in this format: { 'markers': [{ 'name': string, 'value': number, 'unit': string, 'minRange': number or null, 'maxRange': number or null, 'isAbnormal': boolean, 'category': string }] }.",
         },
         {
           role: "user",
-          content: fileContent
-        }
+          content: fileContent,
+        },
       ],
-      response_format: { type: "json_object" }
+      response_format: { type: "json_object" },
     });
 
     const result = JSON.parse(response.choices[0].message.content);
-    
+
     if (!Array.isArray(result.markers)) {
-      throw new Error("Invalid response format from OpenAI: markers array not found");
+      throw new Error(
+        "Invalid response format from OpenAI: markers array not found",
+      );
     }
-    
+
     // Format the extracted markers into the schema format
-    const markers: InsertBloodworkMarker[] = result.markers.map((marker: any) => ({
-      labResultId,
-      userId,
-      name: marker.name,
-      value: String(marker.value), // Ensure value is a string
-      unit: marker.unit,
-      minRange: marker.minRange !== undefined ? String(marker.minRange) : null,
-      maxRange: marker.maxRange !== undefined ? String(marker.maxRange) : null,
-      isAbnormal: marker.isAbnormal || false,
-      category: marker.category || "Uncategorized",
-      resultDate: String(resultDate)
-    }));
-    
+    const markers: InsertBloodworkMarker[] = result.markers.map(
+      (marker: any) => ({
+        labResultId,
+        userId,
+        name: marker.name,
+        value: String(marker.value), // Ensure value is a string
+        unit: marker.unit,
+        minRange:
+          marker.minRange !== undefined ? String(marker.minRange) : null,
+        maxRange:
+          marker.maxRange !== undefined ? String(marker.maxRange) : null,
+        isAbnormal: marker.isAbnormal || false,
+        category: marker.category || "Uncategorized",
+        resultDate: String(resultDate),
+      }),
+    );
+
     return markers;
   } catch (error: any) {
     console.error("Error extracting bloodwork markers:", error);
