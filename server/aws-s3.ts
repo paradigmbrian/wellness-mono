@@ -2,15 +2,18 @@ import { S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import { v4 as uuidv4 } from "uuid";
 import fs from "fs";
+import { config, environment } from "./config";
 
-// Initialize S3 client
+// Initialize S3 client using environment config
 const s3Client = new S3Client({
-  region: process.env.AWS_REGION,
+  region: config.s3.region,
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
   },
 });
+
+console.log(`AWS S3 client initialized for ${environment} environment (bucket: ${config.s3.bucket})`);
 
 // Function to upload file to S3
 export async function uploadFileToS3(
@@ -30,13 +33,14 @@ export async function uploadFileToS3(
     const upload = new Upload({
       client: s3Client,
       params: {
-        Bucket: process.env.AWS_S3_BUCKET!,
+        Bucket: config.s3.bucket,
         Key: s3ObjectKey,
         Body: fileStream,
         ContentType: contentType,
         Metadata: {
           originalName: originalFilename,
-          userId: userId
+          userId: userId,
+          environment: environment
         },
       },
     });
@@ -47,7 +51,7 @@ export async function uploadFileToS3(
     fs.unlinkSync(filePath);
     
     // Return the S3 URL of the uploaded file
-    return `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3ObjectKey}`;
+    return `https://${config.s3.bucket}.s3.${config.s3.region}.amazonaws.com/${s3ObjectKey}`;
   } catch (error) {
     console.error("Error uploading file to S3:", error);
     throw new Error(`Failed to upload file to S3: ${error}`);
@@ -67,7 +71,7 @@ export async function deleteFileFromS3(fileUrl: string): Promise<void> {
     // Send the delete command
     await s3Client.send(
       new DeleteObjectCommand({
-        Bucket: process.env.AWS_S3_BUCKET!,
+        Bucket: config.s3.bucket,
         Key: key,
       })
     );

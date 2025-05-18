@@ -2,10 +2,21 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initScheduledTasks } from "./scheduler";
+import { config, environment } from "./config";
+import cors from "cors";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Configure CORS based on environment
+app.use(cors({
+  origin: config.corsOrigins,
+  credentials: true,
+}));
+
+// Log environment information
+console.log(`Server starting in ${environment.toUpperCase()} environment`);
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -68,8 +79,12 @@ app.use((req, res, next) => {
   }, () => {
     log(`serving on port ${port}`);
     
-    // Initialize scheduled tasks
-    initScheduledTasks();
-    log(`Scheduled tasks initialized`);
+    // Initialize scheduled tasks only if enabled in the current environment
+    if (config.scheduling.enabled) {
+      initScheduledTasks();
+      log(`Scheduled tasks initialized for ${environment} environment`);
+    } else {
+      log(`Scheduled tasks disabled in ${environment} environment`);
+    }
   });
 })();
