@@ -3,6 +3,8 @@ import { InsertBloodworkMarker } from "@shared/schema";
 import { S3Client } from "@aws-sdk/client-s3";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { Readable } from "stream";
+import { config, environment } from "./config";
+import { finished } from "stream/promises";
 
 // Used for both DEXA scan processing and bloodwork
 export interface ProcessResult {
@@ -15,19 +17,39 @@ export interface ProcessResult {
   muscleBalanceReport?: any;
   status?: "normal" | "review" | "abnormal";
 }
-import { finished } from "stream/promises";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({ 
+  apiKey: process.env.OPENAI_API_KEY 
+});
 
-// Initialize S3 client
+// Log OpenAI configuration
+console.log(`OpenAI initialized for ${environment} environment using model: ${config.openai.modelVersion}`);
+
+// Initialize S3 client (shared with aws-s3.ts)
 const s3Client = new S3Client({
-  region: process.env.AWS_REGION as string,
+  region: config.s3.region,
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
   },
 });
+
+/**
+ * Get chat completion with proper error handling and environment-specific settings
+ */
+async function getChatCompletion(messages: any[], responseFormat?: { type: string }) {
+  try {
+    return await openai.chat.completions.create({
+      model: config.openai.modelVersion,
+      messages,
+      response_format: responseFormat,
+    });
+  } catch (error: any) {
+    console.error(`OpenAI API error in ${environment} environment:`, error);
+    throw new Error(`OpenAI API error: ${error.message}`);
+  }
+}
 
 /**
  * Generate health insights based on user health data
